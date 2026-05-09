@@ -1,0 +1,7 @@
+services:
+  grammar-editor:
+    build: .
+    container_name: grammar-editor
+    ports:
+      - "3001:3001"
+    restart: unless-stopped

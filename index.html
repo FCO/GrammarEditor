@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raku Grammar Editor</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    font-size: 14px;
+    background: #1e1e2e;
+    color: #cdd6f4;
+}
+
+#app {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 100vh;
+    gap: 2px;
+    background: #45475a;
+}
+
+#left-half {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+}
+
+#right-half {
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    overflow: hidden;
+}
+
+.panel {
+    background: #1e1e2e;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+}
+
+.panel-header {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: #181825;
+    color: #a6adc8;
+    border-bottom: 1px solid #313244;
+    user-select: none;
+}
+
+.panel-body {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+}
+
+.editor-container {
+    position: relative;
+    height: 100%;
+}
+
+.editor-container textarea,
+.editor-container pre {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    margin: 0;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5;
+    tab-size: 4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow: auto;
+    background: transparent;
+}
+
+.editor-container textarea {
+    z-index: 2;
+    color: transparent;
+    caret-color: #cdd6f4;
+    resize: none;
+    background: transparent;
+}
+
+.editor-container pre {
+    z-index: 1;
+    color: #cdd6f4;
+    pointer-events: none;
+}
+
+.editor-container pre code {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5;
+}
+
+#string-input {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5;
+    resize: none;
+    background: #1e1e2e;
+    color: #cdd6f4;
+    position: relative;
+    z-index: 1;
+}
+
+#string-highlights {
+    position: absolute;
+    top: 10px; left: 10px;
+    width: calc(100% - 20px);
+    height: calc(100% - 20px);
+    padding: 0;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+
+.string-highlight {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0.35;
+    border-radius: 2px;
+    transition: opacity 0.15s;
+    z-index: 3;
+}
+
+.tree-node {
+    padding: 2px 0 2px 16px;
+    cursor: default;
+    font-size: 13px;
+    line-height: 1.6;
+    position: relative;
+}
+
+.tree-node:hover { background: rgba(255,255,255,0.04); }
+.tree-node-header { display: flex; align-items: center; gap: 6px; }
+.tree-toggle {
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 10px;
+    color: #6c7086;
+    user-select: none;
+    flex-shrink: 0;
+}
+.tree-toggle:hover { color: #cdd6f4; }
+.tree-toggle.empty { visibility: hidden; }
+
+.tree-rule-name { font-weight: 500; }
+
+.tree-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.3px;
+}
+
+.tree-badge.match {
+    background: rgba(166, 227, 161, 0.15);
+    color: #a6e3a1;
+    border: 1px solid rgba(166, 227, 161, 0.3);
+}
+
+.tree-badge.fail {
+    background: rgba(243, 139, 168, 0.15);
+    color: #f38ba8;
+    border: 1px solid rgba(243, 139, 168, 0.3);
+}
+
+.tree-data {
+    color: #6c7086;
+    font-size: 12px;
+    margin-left: 4px;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tree-pos {
+    color: #585b70;
+    font-size: 11px;
+    margin-left: auto;
+}
+
+.tree-children { display: none; }
+.tree-children.open { display: block; }
+
+.color-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+#error-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 12px;
+    background: rgba(243, 139, 168, 0.12);
+    border-top: 1px solid rgba(243, 139, 168, 0.3);
+    color: #f38ba8;
+    font-size: 13px;
+    line-height: 1.4;
+    max-height: 80px;
+    overflow-y: auto;
+    z-index: 50;
+}
+
+#error-bar.visible { display: block; }
+
+#status-bar {
+    position: fixed;
+    bottom: 8px;
+    right: 12px;
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 4px;
+    background: rgba(24, 24, 37, 0.9);
+    color: #6c7086;
+    z-index: 100;
+    transition: all 0.3s;
+}
+
+#status-bar.connected { color: #a6e3a1; }
+#status-bar.reconnecting { color: #f9e2af; animation: pulse 1.5s infinite; }
+#status-bar.error { color: #f38ba8; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.match-node {
+    padding: 2px 0 2px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.match-rule-name { font-weight: 500; }
+.match-data {
+    color: #a6e3a1;
+    margin-left: 4px;
+}
+
+.match-children { padding-left: 16px; }
+
+#trace-body, #match-body {
+    padding: 4px 0;
+    font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+    <div id="left-half">
+        <div class="panel" id="grammar-panel">
+            <div class="panel-header">Grammar</div>
+            <div class="panel-body">
+                <div class="editor-container">
+                    <textarea id="grammar-code" spellcheck="false" autofocus></textarea>
+                    <pre id="grammar-highlight"><code id="highlight-output"></code></pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel" id="string-panel">
+            <div class="panel-header">String</div>
+            <div class="panel-body">
+                <div class="editor-container">
+                    <textarea id="string-input" spellcheck="false"></textarea>
+                    <div id="string-highlights"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="right-half">
+        <div class="panel" id="trace-panel">
+            <div class="panel-header">Trace</div>
+            <div class="panel-body" id="trace-body"></div>
+        </div>
+
+        <div class="panel" id="match-panel">
+            <div class="panel-header">Match</div>
+            <div class="panel-body" id="match-body"></div>
+        </div>
+    </div>
+</div>
+
+<div id="status-bar">Disconnected</div>
+<div id="error-bar"></div>
+
+<script>
+const GRAMMAR_DEFAULT = `token TOP       { <letter>+ }
+token letter    { <vowel> || <consonant> }
+token vowel     { <[aeiou]> }
+token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
+
+const STRING_DEFAULT = `hello`;
+
+// ============================================================
+// Raku Grammar Syntax Highlighting
+// ============================================================
+const RAKU_KEYWORDS = /\b(grammar|token|rule|regex|method|proto|multi|use|unit|module|class|role|sub|my|our|has|returns|is|where|does|but|also|of|as)\b/;
+
+function highlightRaku(code) {
+    let html = '';
+    let i = 0;
+    const chars = [...code];
+    const len = chars.length;
+
+    while (i < len) {
+        if (i < len && chars[i] === '#') {
+            let j = i;
+            while (j < len && chars[j] !== '\n') j++;
+            html += '<span class="hl-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+            i = j;
+            continue;
+        }
+
+        if (i + 1 < len && chars[i] === '/' && chars[i+1] === '/') {
+            let j = i;
+            while (j < len && chars[j] !== '\n') j++;
+            html += '<span class="hl-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+            i = j;
+            continue;
+        }
+
+        if (chars[i] === "'" || chars[i] === '"') {
+            const quote = chars[i];
+            let j = i + 1;
+            let escaped = false;
+            while (j < len) {
+                if (escaped) { escaped = false; j++; continue; }
+                if (chars[j] === '\\') { escaped = true; j++; continue; }
+                if (chars[j] === quote) { j++; break; }
+                j++;
+            }
+            html += '<span class="hl-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+            i = j;
+            continue;
+        }
+
+        if (chars[i] === '<' && i + 2 < len) {
+            let j = i + 1;
+            while (j < len && chars[j] !== '>') j++;
+            if (j < len) {
+                j++;
+                const inner = code.slice(i, j);
+                const name = code.slice(i + 1, j - 1);
+                if (/^[a-zA-Z_]\w*$/.test(name) && /^[a-z]/.test(name)) {
+                    html += '<span class="hl-rx-builtin">&lt;' + escapeHtml(name) + '&gt;</span>';
+                    i = j;
+                    continue;
+                }
+                if (/^[A-Z]/.test(name)) {
+                    html += '<span class="hl-rule-call">&lt;' + escapeHtml(name) + '&gt;</span>';
+                    i = j;
+                    continue;
+                }
+            }
+        }
+
+        if (/[a-zA-Z_]/.test(chars[i])) {
+            let j = i;
+            while (j < len && /\w/.test(chars[j])) j++;
+            const word = code.slice(i, j);
+            const rest = code.slice(j).trimStart();
+            if (RAKU_KEYWORDS.test(word) && rest.startsWith('{')) {
+                html += '<span class="hl-keyword">' + escapeHtml(word) + '</span>';
+            } else if (RAKU_KEYWORDS.test(word) && !rest.startsWith(':')) {
+                html += '<span class="hl-keyword">' + escapeHtml(word) + '</span>';
+            } else if (j < len && chars[j] === '{') {
+                html += '<span class="hl-rule-name">' + escapeHtml(word) + '</span>';
+            } else {
+                html += escapeHtml(word);
+            }
+            i = j;
+            continue;
+        }
+
+        if (chars[i] === '{' || chars[i] === '}') {
+            html += '<span class="hl-brace">' + escapeHtml(chars[i]) + '</span>';
+            i++;
+            continue;
+        }
+
+        if ('+*?'.includes(chars[i])) {
+            html += '<span class="hl-quantifier">' + escapeHtml(chars[i]) + '</span>';
+            i++;
+            continue;
+        }
+
+        if ((chars[i] === '|' && i + 1 < len && chars[i+1] === '|') ||
+            (chars[i] === '|') ||
+            (chars[i] === '&' && i + 1 < len && chars[i+1] === '&') ||
+            (chars[i] === '&')) {
+            html += '<span class="hl-alt">' + escapeHtml(chars[i]) + (i+1<len && '|&'.includes(chars[i+1]) ? escapeHtml(chars[++i]) : '') + '</span>';
+            i++;
+            continue;
+        }
+
+        html += escapeHtml(chars[i]);
+        i++;
+    }
+    return html;
+}
+
+function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function debounce(fn, ms) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), ms);
+    };
+}
+
+// ============================================================
+// Trace / Node Colors
+// ============================================================
+const COLOR_PALETTE = [
+    '#89b4fa', '#a6e3a1', '#f9e2af', '#fab387', '#f38ba8',
+    '#cba6f7', '#89dceb', '#f5c2e7', '#b4befe', '#94e2d5',
+    '#74c7ec', '#eba0ac', '#f2cdcd', '#a6adc8', '#bac2de'
+];
+let colorIndex = 0;
+let nodeColors = new Map();
+
+function getNodeColor(nodeId) {
+    if (!nodeColors.has(nodeId)) {
+        nodeColors.set(nodeId, COLOR_PALETTE[colorIndex % COLOR_PALETTE.length]);
+        colorIndex++;
+    }
+    return nodeColors.get(nodeId);
+}
+
+function resetColors() {
+    colorIndex = 0;
+    nodeColors = new Map();
+}
+
+const HL_STYLES = document.createElement('style');
+HL_STYLES.textContent = `
+.hl-comment { color: #6c7086; font-style: italic; }
+.hl-string { color: #a6e3a1; }
+.hl-keyword { color: #cba6f7; font-weight: 600; }
+.hl-rule-name { color: #89b4fa; font-weight: 500; }
+.hl-rx-builtin { color: #f9e2af; }
+.hl-rule-call { color: #89dceb; }
+.hl-brace { color: #f5c2e7; }
+.hl-quantifier { color: #fab387; }
+.hl-alt { color: #f38ba8; }
+`;
+document.head.appendChild(HL_STYLES);
+
+// ============================================================
+// Trace Rendering
+// ============================================================
+let traceNodeMap = new Map();
+let tracePosMap = new Map();
+
+function storeTraceNode(path, el, rule, posStart, posEnd) {
+    traceNodeMap.set(path, el);
+    if (posStart != null) {
+        tracePosMap.set(rule + ':' + posStart + '-' + posEnd, el);
+    }
+}
+
+function highlightEl(el, color) {
+    if (el) {
+        el.style.outline = '2px solid ' + color;
+        el.style.outlineOffset = '-2px';
+    }
+}
+
+function clearEl(el) {
+    if (el) {
+        el.style.outline = '';
+        el.style.outlineOffset = '';
+    }
+}
+
+function clearTraceHighlights() {
+    for (const el of traceNodeMap.values()) {
+        clearEl(el);
+    }
+}
+
+function renderTrace(tree) {
+    const body = document.getElementById('trace-body');
+    resetColors();
+    traceNodeMap = new Map();
+    body.innerHTML = '';
+    if (!tree) return;
+    body.appendChild(renderTraceNode(tree, 0, ''));
+}
+
+function renderTraceNode(node, depth, path) {
+    const id = path + '/' + (node.rule || '?');
+    const color = getNodeColor(id);
+    const hasChildren = node.children && node.children.length > 0;
+
+    const container = document.createElement('div');
+    container.className = 'tree-node';
+    container.dataset.path = id;
+    storeTraceNode(id, container, node.rule || '?', node.pos_start, node.pos_end);
+
+    const header = document.createElement('div');
+    header.className = 'tree-node-header';
+
+    const toggle = document.createElement('span');
+    toggle.className = 'tree-toggle' + (hasChildren ? '' : ' empty');
+    if (hasChildren) toggle.textContent = '\u25B8';
+    header.appendChild(toggle);
+
+    const dot = document.createElement('span');
+    dot.className = 'color-dot';
+    dot.style.backgroundColor = color;
+    header.appendChild(dot);
+
+    const badge = document.createElement('span');
+    badge.className = 'tree-badge ' + (node.match ? 'match' : 'fail');
+    badge.textContent = node.match ? 'MATCH' : 'FAIL';
+    header.appendChild(badge);
+
+    const name = document.createElement('span');
+    name.className = 'tree-rule-name';
+    name.textContent = node.rule || '(anonymous)';
+    header.appendChild(name);
+
+    if (node.data != null) {
+        const data = document.createElement('span');
+        data.className = 'tree-data';
+        data.textContent = JSON.stringify(node.data);
+        header.appendChild(data);
+    }
+
+    if (node.pos_start != null) {
+        const pos = document.createElement('span');
+        pos.className = 'tree-pos';
+        pos.textContent = node.pos_start + (node.pos_end !== node.pos_start ? '-' + node.pos_end : '');
+        header.appendChild(pos);
+    }
+
+    container.appendChild(header);
+
+    container.addEventListener('mouseenter', function() {
+        highlightStringRegion(node.pos_start, node.pos_end, color);
+        highlightEl(this, color);
+        var rule = node.rule || '?';
+        var posKey = rule + ':' + node.pos_start + '-' + node.pos_end;
+        if (matchPosMap) highlightEl(matchPosMap.get(posKey), color);
+    });
+    container.addEventListener('mouseleave', function() {
+        clearStringHighlights();
+        clearTraceHighlights();
+        clearMatchHighlights();
+    });
+
+    if (hasChildren) {
+        toggle.addEventListener('click', function() {
+            var expanded = childrenDiv.classList.toggle('open');
+            toggle.textContent = expanded ? '\u25BE' : '\u25B8';
+        });
+
+        var childrenDiv = document.createElement('div');
+        childrenDiv.className = 'tree-children';
+        for (var i = 0; i < node.children.length; i++) {
+            childrenDiv.appendChild(renderTraceNode(node.children[i], depth + 1, id + '/' + i));
+        }
+        container.appendChild(childrenDiv);
+
+        if (depth < 2) {
+            childrenDiv.classList.add('open');
+            toggle.textContent = '\u25BE';
+        }
+    }
+
+    return container;
+}
+
+function clearTrace() {
+    document.getElementById('trace-body').innerHTML = '';
+}
+
+// ============================================================
+// String Highlighting
+// ============================================================
+let highlightEls = [];
+
+function measureCharWidth() {
+    const ta = document.getElementById('string-input');
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const style = getComputedStyle(ta);
+    ctx.font = style.fontSize + ' ' + style.fontFamily;
+    return ctx.measureText('A').width;
+}
+
+function highlightStringRegion(start, end, color) {
+    const container = document.getElementById('string-highlights');
+    clearStringHighlights();
+
+    if (start == null || end == null) return;
+    const text = document.getElementById('string-input').value;
+    const clampedStart = Math.max(0, Math.min(start, text.length));
+    const clampedEnd = Math.max(clampedStart, Math.min(end, text.length));
+    if (clampedStart >= clampedEnd) return;
+
+    const charWidth = measureCharWidth();
+    const fontSize = parseFloat(getComputedStyle(document.getElementById('string-input')).fontSize);
+    const lineHeight = fontSize * 1.5;
+
+    const lines = text.split('\n');
+    let charCount = 0;
+    for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
+        const lineStart = charCount;
+        const lineEnd = charCount + line.length + 1;
+        charCount = lineEnd;
+
+        if (clampedStart < lineEnd && clampedEnd > lineStart) {
+            const hlStart = Math.max(clampedStart - lineStart, 0);
+            const hlEnd = Math.min(clampedEnd - lineStart, line.length);
+
+            if (hlStart < hlEnd) {
+                const el = document.createElement('div');
+                el.className = 'string-highlight';
+                el.style.top = (li * lineHeight) + 'px';
+                el.style.left = (hlStart * charWidth) + 'px';
+                el.style.width = ((hlEnd - hlStart) * charWidth) + 'px';
+                el.style.height = lineHeight + 'px';
+                el.style.backgroundColor = color;
+                container.appendChild(el);
+                highlightEls.push(el);
+            }
+        }
+    }
+}
+
+function clearStringHighlights() {
+    const container = document.getElementById('string-highlights');
+    for (const el of highlightEls) el.remove();
+    highlightEls = [];
+}
+
+// ============================================================
+// Match Rendering
+// ============================================================
+let matchNodeMap = new Map();
+let matchPosMap = new Map();
+
+function renderMatch(match) {
+    const body = document.getElementById('match-body');
+    matchNodeMap = new Map();
+    matchPosMap = new Map();
+    body.innerHTML = '';
+    if (!match) return;
+    body.appendChild(renderMatchNode(match, ''));
+}
+
+function renderMatchNode(node, path) {
+    const id = path + '/' + (node.rule || '?');
+    const color = getNodeColor(id);
+    const container = document.createElement('div');
+    container.className = 'match-node';
+    container.dataset.matchPath = id;
+
+    const name = document.createElement('span');
+    name.className = 'match-rule-name';
+    name.textContent = node.rule || 'TOP';
+    container.appendChild(name);
+
+    const data = document.createElement('span');
+    data.className = 'match-data';
+    data.textContent = JSON.stringify(node.data);
+    container.appendChild(data);
+
+    matchNodeMap.set(id, container);
+    var rule = node.rule || '?';
+    if (node.pos_start != null) {
+        matchPosMap.set(rule + ':' + node.pos_start + '-' + node.pos_end, container);
+    }
+
+    container.addEventListener('mouseenter', function() {
+        highlightStringRegion(node.pos_start, node.pos_end, color);
+        highlightEl(this, color);
+        var posKey = rule + ':' + node.pos_start + '-' + node.pos_end;
+        if (tracePosMap) highlightEl(tracePosMap.get(posKey), color);
+    });
+    container.addEventListener('mouseleave', function() {
+        clearStringHighlights();
+        clearTraceHighlights();
+        clearMatchHighlights();
+    });
+
+    if (node.children && node.children.length > 0) {
+        var children = document.createElement('div');
+        children.className = 'match-children';
+        for (var i = 0; i < node.children.length; i++) {
+            children.appendChild(renderMatchNode(node.children[i], id + '/' + i));
+        }
+        container.appendChild(children);
+    }
+
+    return container;
+}
+
+function highlightMatchNode(path, color) {
+    var el = matchNodeMap.get(path);
+    if (el) {
+        el.style.backgroundColor = color;
+        el.style.opacity = '0.05';
+        el.style.borderRadius = '4px';
+    }
+}
+
+function clearMatchHighlights() {
+    for (const el of matchNodeMap.values()) {
+        clearEl(el);
+    }
+}
+
+function clearMatch() {
+    var body = document.getElementById('match-body');
+    body.innerHTML = '';
+    matchNodeMap = new Map();
+    matchPosMap = new Map();
+}
+
+// ============================================================
+// Error Display
+// ============================================================
+function showError(msg) {
+    const bar = document.getElementById('error-bar');
+    bar.textContent = msg;
+    bar.className = 'visible';
+    clearTrace();
+    clearMatch();
+}
+
+function hideError() {
+    document.getElementById('error-bar').className = '';
+}
+
+// ============================================================
+// WebSocket Client
+// ============================================================
+let ws = null;
+let reconnectTimer = null;
+let reconnectDelay = 1000;
+const MAX_RECONNECT = 30000;
+let wsConnected = false;
+
+function connectWS() {
+    const status = document.getElementById('status-bar');
+    status.textContent = 'Connecting...';
+    status.className = '';
+
+    ws = new WebSocket((location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/ws');
+
+    ws.onopen = () => {
+        wsConnected = true;
+        reconnectDelay = 1000;
+        status.textContent = 'Connected';
+        status.className = 'connected';
+        sendGrammar();
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            handleResponse(data);
+        } catch (e) {
+            console.error('WS parse error:', e);
+        }
+    };
+
+    ws.onclose = () => {
+        wsConnected = false;
+        status.textContent = 'Reconnecting...';
+        status.className = 'reconnecting';
+        scheduleReconnect();
+    };
+
+    ws.onerror = () => {
+        if (!wsConnected) {
+            status.textContent = 'Connection failed';
+            status.className = 'error';
+        }
+    };
+}
+
+function scheduleReconnect() {
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+        connectWS();
+        reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT);
+    }, reconnectDelay);
+}
+
+function sendMessage(msg) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(msg));
+    }
+}
+
+// ============================================================
+// Grammar Evaluation (via WS)
+// ============================================================
+let debouncedSend = debounce(sendGrammar, 300);
+let currentGrammar = '';
+let currentString = '';
+
+function sendGrammar() {
+    const grammar = document.getElementById('grammar-code').value;
+    const string = document.getElementById('string-input').value;
+    currentGrammar = grammar;
+    currentString = string;
+    sendMessage({ grammar, string });
+}
+
+function handleResponse(data) {
+    if (data.error) {
+        showError(data.error);
+        return;
+    }
+    hideError();
+    if (data.trace) renderTrace(data.trace);
+    else clearTrace();
+    if (data.match) renderMatch(data.match);
+    else clearMatch();
+}
+
+// ============================================================
+// Event Setup
+// ============================================================
+const grammarInput = document.getElementById('grammar-code');
+const stringInput = document.getElementById('string-input');
+const highlightOutput = document.getElementById('highlight-output');
+
+function updateHighlight() {
+    const code = grammarInput.value;
+    highlightOutput.innerHTML = highlightRaku(code);
+}
+
+grammarInput.addEventListener('input', () => {
+    updateHighlight();
+    debouncedSend();
+});
+
+stringInput.addEventListener('input', debouncedSend);
+
+grammarInput.addEventListener('scroll', () => {
+    const pre = document.getElementById('grammar-highlight');
+    pre.scrollTop = grammarInput.scrollTop;
+    pre.scrollLeft = grammarInput.scrollLeft;
+});
+
+// Tab handling
+grammarInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = grammarInput.selectionStart;
+        const end = grammarInput.selectionEnd;
+        grammarInput.value = grammarInput.value.substring(0, start) + '\t' + grammarInput.value.substring(end);
+        grammarInput.selectionStart = grammarInput.selectionEnd = start + 1;
+        updateHighlight();
+        debouncedSend();
+    }
+    if ((e.key === 'Enter' && e.ctrlKey) || (e.key === 'Enter' && e.metaKey)) {
+        e.preventDefault();
+        sendGrammar();
+    }
+});
+
+// Initial load
+grammarInput.value = GRAMMAR_DEFAULT;
+stringInput.value = STRING_DEFAULT;
+updateHighlight();
+
+document.addEventListener('DOMContentLoaded', () => {
+    connectWS();
+    // Initial send after a small delay for WS to connect
+    setTimeout(sendGrammar, 500);
+});
+</script>
+</body>
+</html>

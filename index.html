@@ -277,6 +277,18 @@ body {
     padding: 4px 0;
     font-size: 13px;
 }
+
+@media (max-width: 768px) {
+    html, body { overflow: auto; }
+    #app {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 100vh;
+    }
+    #right-half { flex-direction: column; }
+    .panel { min-height: 200px; }
+    #string-highlights { height: auto; min-height: 180px; }
+}
 </style>
 </head>
 <body>

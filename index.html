@@ -1424,17 +1424,19 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             return { panelVisibility: vis, panelSizes: sizes };
         }
 
+        function sortJsonKeys(key, val) {
+            if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                return Object.keys(val).sort().reduce(function (acc, k) { acc[k] = val[k]; return acc; }, {});
+            }
+            return val;
+        }
+
         async function copyShareUrl() {
             var grammar = grammarInput.value;
             var string = stringInput.value;
             var actions = actionsInput.value;
-            function sortJsonKeys(key, val) {
-                if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-                    return Object.keys(val).sort().reduce(function (acc, k) { acc[k] = val[k]; return acc; }, {});
-                }
-                return val;
-            }
             var state = JSON.stringify(capturePaneState(), sortJsonKeys);
+            var url;
 
             try {
                 var resp = await fetch('/_store', {
@@ -1442,27 +1444,28 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ grammar_code: grammar, string_input: string, actions_code: actions, state: state })
                 });
+                if (!resp.ok) throw new Error('POST failed: ' + resp.status);
                 var data = await resp.json();
-                var url = window.location.origin + '/' + data.id;
-                if (navigator.clipboard) {
-                    await navigator.clipboard.writeText(url);
-                } else {
-                    fallbackCopy(url);
-                }
-            } catch {
-                fallbackCopy(window.location.href);
+                url = window.location.origin + '/' + data.id;
+                console.log('share: created snapshot', data.id);
+            } catch (e) {
+                console.error('share: POST failed', e);
+                url = window.location.href;
             }
+            fallbackCopy(url);
             showCopied();
         }
 
         async function loadFromPath() {
-            var match = window.location.pathname.match(/^\/([0-9a-f]{40})$/);
-            if (!match) return false;
-            var id = match[1];
+            var match = window.location.pathname.match(/^\/([0-9a-f]{40})$/i);
+            if (!match) { console.warn('loadFromPath: no SHA1 match in path', window.location.pathname); return false; }
+            var id = match[1].toLowerCase();
+            console.log('loadFromPath: loading snapshot', id);
             try {
                 var resp = await fetch('/_store/' + id);
-                if (!resp.ok) return false;
+                if (!resp.ok) { console.error('loadFromPath: fetch failed', resp.status, resp.statusText); return false; }
                 var data = await resp.json();
+                console.log('loadFromPath: loaded snapshot', id);
                 grammarInput.value = data.grammar_code || '';
                 stringInput.value = data.string_input || '';
                 actionsInput.value = data.actions_code || '';
@@ -1482,7 +1485,8 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                 updateHighlight();
                 setTimeout(sendGrammar, 500);
                 return true;
-            } catch {
+            } catch (e) {
+                console.error('loadFromPath: exception', e);
                 return false;
             }
         }

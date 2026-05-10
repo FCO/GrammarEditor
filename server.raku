@@ -4,23 +4,24 @@ use Cro::HTTP::Router::WebSocket;
 use Cro::HTTP::Client;
 use JSON::Fast;
 use Digest::SHA1::Native;
-use Red:api<2>;
+use DBIish;
 use lib 'lib';
 use GrammarEngine;
 
 sub log-msg($msg) { $*ERR.say($msg); $*ERR.flush; }
 
-model GrammarSnapshot is table('grammar_snapshots') {
-    has Str $.id            is column{ :primary-key };
-    has Str $.grammar_code  is column{ :nullable };
-    has Str $.string_input  is column{ :nullable };
-    has Str $.actions_code  is column{ :nullable };
-    has Str $.state         is column{ :nullable };
-}
-
 # SQLite grammar snapshot store
 my $db-path = %*ENV<GRAMMAR_SNAPSHOTS_DB> // 'grammar-snapshots.sqlite3';
-my $red-db = database 'SQLite', :database($db-path);
+my $dbh = DBIish.connect('SQLite', :database($db-path));
+$dbh.do(q:to/SCHEMA/);
+    CREATE TABLE IF NOT EXISTS grammar_snapshots (
+        id            TEXT PRIMARY KEY,
+        grammar_code  TEXT NOT NULL DEFAULT '',
+        string_input  TEXT NOT NULL DEFAULT '',
+        actions_code  TEXT NOT NULL DEFAULT '',
+        state         TEXT NOT NULL DEFAULT ''
+    )
+    SCHEMA
 log-msg "Grammar snapshot DB: $db-path";
 
 sub compute-snapshot-id(Str $grammar, Str $string, Str $actions = '', Str $state = '') {
@@ -74,20 +75,17 @@ my $api-routes = route {
     # Store a grammar snapshot
     post -> '_store' {
         my $body-text = await request.body-text;
-        my $*RED-DB = $red-db;
         my %data = from-json($body-text);
         my $grammar   = %data<grammar_code>  // '';
         my $string    = %data<string_input>  // '';
         my $actions   = %data<actions_code>  // '';
         my $state     = %data<state>         // '';
         my $id = compute-snapshot-id($grammar, $string, $actions, $state);
-        unless GrammarSnapshot.^find(:$id) {
-            GrammarSnapshot.^create: |%(
-                id           => $id,
-                grammar_code => $grammar,
-                string_input => $string,
-                actions_code => $actions,
-                state        => $state,
+        my ($exists) = $dbh.execute('SELECT 1 FROM grammar_snapshots WHERE id = ?', $id).row;
+        unless $exists {
+            $dbh.execute(
+                'INSERT INTO grammar_snapshots (id, grammar_code, string_input, actions_code, state) VALUES (?, ?, ?, ?, ?)',
+                $id, $grammar, $string, $actions, $state
             );
             log-msg "store: created snapshot $id";
         }
@@ -102,14 +100,12 @@ my $api-routes = route {
 
     # Retrieve a grammar snapshot
     get -> '_store', $id {
-        my $*RED-DB = $red-db;
-        with GrammarSnapshot.^find(:$id) -> $snap {
-            my %snap = %(
-                grammar_code => $snap.grammar_code,
-                string_input => $snap.string_input,
-                actions_code => $snap.actions_code,
-            );
-            %snap<state> = $snap.state if $snap.state;
+        my $sth = $dbh.execute('SELECT grammar_code, string_input, actions_code, state FROM grammar_snapshots WHERE id = ?', $id);
+        my @row = $sth.row;
+        if @row {
+            my ($grammar_code, $string_input, $actions_code, $state) = @row;
+            my %snap = %(:$grammar_code, :$string_input, :$actions_code);
+            %snap<state> = $state if $state;
             content 'application/json', to-json(%snap);
         } else {
             not-found;
@@ -146,7 +142,7 @@ my $app = route {
     }
 
     # SHA1 path: serve index.html so the frontend can load the snapshot
-    get -> Str $id where /^<[0..9 a..f]>**40$/ {
+    get -> Str $id where /:i ^ <[0..9a..f]> ** 40 $/ {
         my $html = slurp($*PROGRAM.parent.child('index.html'));
         content 'text/html', $html;
     }

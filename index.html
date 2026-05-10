@@ -482,6 +482,35 @@
             font-size: 13px;
         }
 
+        .resize-handle {
+            flex: 0 0 4px;
+            position: relative;
+            background: #313244;
+            transition: background 0.15s;
+            z-index: 10;
+        }
+
+        .resize-handle:hover {
+            background: #585b70;
+        }
+
+        .resize-handle.dir-row {
+            cursor: row-resize;
+        }
+
+        .resize-handle.dir-col {
+            cursor: col-resize;
+        }
+
+        .resize-handle.resizing {
+            background: #89b4fa;
+        }
+
+        body.resizing {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
         @media (max-width: 768px) {
 
             html,
@@ -570,6 +599,12 @@
                 <div class="panel collapsed" id="actions-panel">
                     <div class="panel-header">
                         <span>Actions</span>
+                        <div class="panel-header-btns">
+                            <button class="panel-header-btn" data-action="save-actions"
+                                title="Save as .rakumod">💾</button>
+                            <button class="panel-header-btn" data-action="open-actions"
+                                title="Open .rakumod file">📂</button>
+                        </div>
                     </div>
                     <div class="panel-body">
                         <div class="editor-container">
@@ -1266,6 +1301,21 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             return openFileViaInput(inputId);
         }
 
+        async function saveActions() {
+            const code = actionsInput.value;
+            const date = new Date().toISOString().slice(0, 10);
+            const filename = 'actions-' + date + '.rakumod';
+            await saveFileAs(code, filename, filename);
+        }
+
+        async function openActions() {
+            const content = await pickAndReadFile(['.rakumod', '.raku'], 'grammar-file-input');
+            if (content == null) return;
+            actionsInput.value = content;
+            updateHighlight();
+            sendGrammar();
+        }
+
         async function saveGrammar() {
             const code = grammarInput.value;
             const date = new Date().toISOString().slice(0, 10);
@@ -1316,8 +1366,10 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         function buildShareUrlSync() {
             const g = btoa(encodeURIComponent(grammarInput.value));
             const s = btoa(encodeURIComponent(stringInput.value));
+            const a = actionsInput.value ? btoa(encodeURIComponent(actionsInput.value)) : '';
             const url = new URL(window.location.href);
             url.search = '?g=' + encodeURIComponent(g) + '&s=' + encodeURIComponent(s);
+            if (a) url.search += '&a=' + encodeURIComponent(a);
             return url.href;
         }
 
@@ -1350,12 +1402,14 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         }
 
         async function getShareUrl() {
-            const [g, s] = await Promise.all([
+            const [g, s, a] = await Promise.all([
                 compressEncode(grammarInput.value),
-                compressEncode(stringInput.value)
+                compressEncode(stringInput.value),
+                actionsInput.value ? compressEncode(actionsInput.value) : ''
             ]);
             const url = new URL(window.location.href);
             url.search = '?g=' + encodeURIComponent(g) + '&s=' + encodeURIComponent(s);
+            if (a) url.search += '&a=' + encodeURIComponent(a);
             return url.href;
         }
 
@@ -1402,6 +1456,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             const params = new URLSearchParams(window.location.search);
             const g = params.get('g');
             const s = params.get('s');
+            const a = params.get('a');
             let changed = false;
             if (g != null) {
                 const decoded = await decompressDecode(g);
@@ -1415,6 +1470,21 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                 if (decoded != null) {
                     stringInput.value = decoded;
                     changed = true;
+                }
+            }
+            if (a != null) {
+                const decoded = await decompressDecode(a);
+                if (decoded != null) {
+                    actionsInput.value = decoded;
+                    changed = true;
+                    // Auto-show Actions and Made panels
+                    document.getElementById('actions-panel').classList.remove('collapsed');
+                    document.getElementById('made-panel').classList.remove('collapsed');
+                    var actionsToggle = document.querySelector('.panel-toggle[data-panel="actions"] input');
+                    var madeToggle = document.querySelector('.panel-toggle[data-panel="made"] input');
+                    if (actionsToggle) actionsToggle.checked = true;
+                    if (madeToggle) madeToggle.checked = true;
+                    updateRightHalf();
                 }
             }
             if (changed) {
@@ -1489,6 +1559,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
 
         // Panel toggles
         function updateRightHalf() {
+            setupResizeHandles();
             var trace = document.getElementById('trace-panel');
             var match = document.getElementById('match-panel');
             var made = document.getElementById('made-panel');
@@ -1516,8 +1587,10 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
 
             if (topVisible === 0) {
                 rightTopRow.style.display = 'none';
+                made.style.flex = '1';
             } else {
                 rightTopRow.style.display = '';
+                made.style.flex = '';
                 if (topVisible === 1) {
                     rightTopRow.classList.add('single');
                 } else {
@@ -1537,17 +1610,109 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             });
         });
 
+        // ============================================================
+        // Resize Handles
+        // ============================================================
+        function makeResizeHandle(handleEl, prevEl, nextEl, direction) {
+            var startPos, startPrev, startNext;
+
+            function onMouseDown(e) {
+                e.preventDefault();
+                startPos = direction === 'row' ? e.clientY : e.clientX;
+                startPrev = direction === 'row' ? prevEl.offsetHeight : prevEl.offsetWidth;
+                startNext = direction === 'row' ? nextEl.offsetHeight : nextEl.offsetWidth;
+                handleEl.classList.add('resizing');
+                document.body.classList.add('resizing');
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            }
+
+            function onMouseMove(e) {
+                var pos = direction === 'row' ? e.clientY : e.clientX;
+                var delta = pos - startPos;
+                var total = startPrev + startNext;
+                var prevRatio = (startPrev + delta) / total;
+                var nextRatio = (startNext - delta) / total;
+                if (prevRatio < 0.1 || nextRatio < 0.1) return;
+                if (direction === 'row') {
+                    prevEl.style.flex = prevRatio.toFixed(4);
+                    nextEl.style.flex = nextRatio.toFixed(4);
+                } else {
+                    prevEl.style.flex = prevRatio.toFixed(4);
+                    nextEl.style.flex = nextRatio.toFixed(4);
+                }
+            }
+
+            function onMouseUp() {
+                handleEl.classList.remove('resizing');
+                document.body.classList.remove('resizing');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+            }
+
+            handleEl.addEventListener('mousedown', onMouseDown);
+        }
+
+        function insertResizeHandle(prev, next, dir) {
+            var handle = document.createElement('div');
+            handle.className = 'resize-handle dir-' + dir;
+            prev.parentNode.insertBefore(handle, next);
+            makeResizeHandle(handle, prev, next, dir);
+            return handle;
+        }
+
+        function setupResizeHandles() {
+            var handles = document.querySelectorAll('.resize-handle');
+            handles.forEach(function (h) { h.remove(); });
+
+            // Between left-half and right-half
+            var leftHalf = document.getElementById('left-half');
+            var rightHalf = document.getElementById('right-half');
+            if (leftHalf && rightHalf) {
+                insertResizeHandle(leftHalf, rightHalf, 'col');
+            }
+
+            // Between grammar and actions panels
+            var grammarPanel = document.getElementById('grammar-panel');
+            var actionsPanel = document.getElementById('actions-panel');
+            if (grammarPanel && actionsPanel && !actionsPanel.classList.contains('collapsed')) {
+                insertResizeHandle(grammarPanel, actionsPanel, 'row');
+            }
+
+            // Between actions and string panels
+            var stringPanel = document.getElementById('string-panel');
+            if (actionsPanel && stringPanel && !actionsPanel.classList.contains('collapsed')) {
+                insertResizeHandle(actionsPanel, stringPanel, 'row');
+            }
+
+            // Between trace and match panels
+            var tracePanel = document.getElementById('trace-panel');
+            var matchPanel = document.getElementById('match-panel');
+            if (tracePanel && matchPanel && !tracePanel.classList.contains('collapsed') && !matchPanel.classList.contains('collapsed')) {
+                insertResizeHandle(tracePanel, matchPanel, 'col');
+            }
+
+            // Between right top row and made panel
+            var rightTopRow = document.getElementById('right-top-row');
+            var madePanel = document.getElementById('made-panel');
+            if (rightTopRow && madePanel && !madePanel.classList.contains('collapsed')) {
+                insertResizeHandle(rightTopRow, madePanel, 'row');
+            }
+        }
+
         // Save/Open button handlers
         document.querySelectorAll('[data-action="save-grammar"]').forEach(b => b.addEventListener('click', saveGrammar));
+        document.querySelectorAll('[data-action="save-actions"]').forEach(b => b.addEventListener('click', saveActions));
         document.querySelectorAll('[data-action="save-string"]').forEach(b => b.addEventListener('click', saveString));
         document.querySelectorAll('[data-action="open-grammar"]').forEach(b => b.addEventListener('click', openGrammar));
+        document.querySelectorAll('[data-action="open-actions"]').forEach(b => b.addEventListener('click', openActions));
         document.querySelectorAll('[data-action="open-string"]').forEach(b => b.addEventListener('click', openString));
 
         // Share button handler
         document.getElementById('btn-share').addEventListener('click', copyShareUrl);
 
         // Initial load
-        const hasParams = new URLSearchParams(window.location.search).has('g') || new URLSearchParams(window.location.search).has('s');
+        const hasParams = new URLSearchParams(window.location.search).has('g') || new URLSearchParams(window.location.search).has('s') || new URLSearchParams(window.location.search).has('a');
         if (hasParams) {
             loadFromUrlParams().then();
         } else {
@@ -1558,6 +1723,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
 
         document.addEventListener('DOMContentLoaded', () => {
             connectWS();
+            setupResizeHandles();
             // Initial send after a small delay for WS to connect
             setTimeout(sendGrammar, 500);
         });

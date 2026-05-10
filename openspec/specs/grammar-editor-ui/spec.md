@@ -275,3 +275,85 @@ When the Made panel is visible, the right column SHALL use a nested flex layout:
 #### Scenario: Right column layout with made hidden
 - **WHEN** Made is hidden but Trace and Match are visible
 - **THEN** Trace and Match fill the right column in the existing layout
+
+### Requirement: Actions save button
+
+The Actions panel header SHALL include a save button that downloads the actions class code as a `.rakumod` file. The save button SHALL use the same visual style as the Grammar and String panel save buttons.
+
+#### Scenario: Save actions button downloads .rakumod file
+- **WHEN** the user clicks the save button in the Actions panel header
+- **THEN** a file download is triggered with the actions code content
+- **AND** the file extension is `.rakumod`
+
+### Requirement: Actions open button
+
+The Actions panel header SHALL include an open button that opens a file picker for `.rakumod` files and loads the content into the actions editor.
+
+#### Scenario: Open actions loads .rakumod file
+- **WHEN** the user clicks the open button in the Actions panel header and selects a `.rakumod` file
+- **THEN** the file content replaces the actions editor content
+- **AND** syntax highlighting is applied to the loaded content
+- **AND** the grammar is re-evaluated with the new actions code
+
+### Requirement: Resize handles between panels
+
+The layout SHALL include draggable resize handles between all adjacent panels in the editor. Resize handles SHALL be thin (4px) visual dividers. They SHALL change the cursor to indicate the resize direction on hover.
+
+#### Scenario: Resize handle appears between left and right halves
+- **WHEN** the page loads
+- **THEN** a vertical resize handle is present between `#left-half` and `#right-half`
+- **AND** the cursor changes to `col-resize` on hover
+
+#### Scenario: Resize handle between Grammar, Actions, and String panels
+- **WHEN** the Actions panel is visible
+- **THEN** horizontal resize handles appear between Grammar/Actions and Actions/String panels
+- **AND** the cursor changes to `row-resize` on hover
+
+#### Scenario: Resize handle between Actions and String panels
+- **WHEN** the Actions panel is visible
+- **THEN** a horizontal resize handle appears between the Actions and String panels
+
+#### Scenario: Resize handle between Trace and Match panels
+- **WHEN** both Trace and Match panels are visible
+- **THEN** a vertical resize handle appears between Trace and Match panels
+
+#### Scenario: Resize handle between right top row and Made panel
+- **WHEN** the Made panel is visible
+- **THEN** a horizontal resize handle appears between the right top row and the Made panel
+
+#### Scenario: Resize handles hidden when adjacent panel is collapsed
+- **WHEN** a panel is collapsed via its toggle
+- **THEN** the resize handle(s) adjacent to the collapsed panel are hidden
+
+### Requirement: Drag to resize
+
+Dragging a resize handle SHALL adjust the relative sizes of the two adjacent panels. The mouse cursor SHALL show as a resize cursor during the drag.
+
+#### Scenario: Vertical resize adjusts left/right halves
+- **WHEN** the user drags the vertical handle between left and right halves
+- **THEN** the left and right halves adjust their widths proportionally
+- **AND** both halves remain fully visible
+
+#### Scenario: Horizontal resize adjusts panel heights
+- **WHEN** the user drags a horizontal handle between stacked panels (Grammar/Actions/String)
+- **THEN** the adjacent panels adjust their heights proportionally
+
+#### Scenario: Trace/Match drag adjusts column widths
+- **WHEN** the user drags the vertical handle between Trace and Match panels
+- **THEN** the Trace and Match panels adjust their widths proportionally
+
+#### Scenario: Made panel drag adjusts row heights
+- **WHEN** the user drags the horizontal handle between the top row and Made panel
+- **THEN** the top row and Made panel adjust their heights proportionally
+
+### Requirement: Resize handle creation
+
+The resize handles SHALL be created dynamically by JavaScript. The handle creation SHALL respond to panel visibility changes (e.g., when a panel is toggled, adjacent handles are shown/hidden).
+
+#### Scenario: Handles created on load
+- **WHEN** the page loads
+- **THEN** resize handles are created for all currently visible adjacent panels
+
+#### Scenario: Handles update on panel toggle
+- **WHEN** a panel is shown or hidden via toggle
+- **THEN** the adjacent resize handles are shown or hidden accordingly

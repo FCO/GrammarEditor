@@ -9,8 +9,7 @@ sub process-grammar(Str $code, Str $string) returns Hash is export {
         }
     }
 
-    my $full-code = "my grammar MyGrammar \{\n\t$code\n\}";
-    my $grammar = $full-code.EVAL;
+    my $grammar = $code.EVAL;
 
     my @methods = $grammar.^methods.grep({ .WHAT ~~ Regex });
     my $count = 0;

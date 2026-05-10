@@ -1233,11 +1233,52 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         // ============================================================
         // URL Sharing
         // ============================================================
-        function b64encode(str) {
+        function uint8ToBase64(bytes) {
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        function base64ToUint8(str) {
+            const binary = atob(str);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        function buildShareUrlSync() {
+            const g = btoa(encodeURIComponent(grammarInput.value));
+            const s = btoa(encodeURIComponent(stringInput.value));
+            const url = new URL(window.location.href);
+            url.search = '?g=' + encodeURIComponent(g) + '&s=' + encodeURIComponent(s);
+            return url.href;
+        }
+
+        async function compressEncode(str) {
+            const bytes = new TextEncoder().encode(str);
+            if (typeof CompressionStream !== 'undefined') {
+                try {
+                    const compressed = new Blob([bytes]).stream().pipeThrough(new CompressionStream('gzip'));
+                    const buf = await new Response(compressed).arrayBuffer();
+                    return uint8ToBase64(new Uint8Array(buf));
+                } catch {}
+            }
             return btoa(encodeURIComponent(str));
         }
 
-        function b64decode(str) {
+        async function decompressDecode(str) {
+            if (typeof DecompressionStream !== 'undefined') {
+                try {
+                    const bytes = base64ToUint8(str);
+                    const decompressed = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+                    const buf = await new Response(decompressed).arrayBuffer();
+                    return new TextDecoder().decode(buf);
+                } catch {}
+            }
             try {
                 return decodeURIComponent(atob(str));
             } catch {
@@ -1245,28 +1286,28 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             }
         }
 
-        function getShareUrl() {
-            const g = b64encode(grammarInput.value);
-            const s = b64encode(stringInput.value);
+        async function getShareUrl() {
+            const [g, s] = await Promise.all([
+                compressEncode(grammarInput.value),
+                compressEncode(stringInput.value)
+            ]);
             const url = new URL(window.location.href);
-            url.search = '?g=' + g + '&s=' + s;
+            url.search = '?g=' + encodeURIComponent(g) + '&s=' + encodeURIComponent(s);
             return url.href;
         }
 
-        async function copyShareUrl() {
-            const url = getShareUrl();
-            try {
-                await navigator.clipboard.writeText(url);
-            } catch {
-                const ta = document.createElement('textarea');
-                ta.value = url;
-                ta.style.position = 'fixed';
-                ta.style.opacity = '0';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-            }
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            ta.remove();
+        }
+
+        function showCopied() {
             const btn = document.getElementById('btn-share');
             btn.textContent = '🔗 Copied!';
             btn.classList.add('copied');
@@ -1276,20 +1317,38 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             }, 2000);
         }
 
-        function loadFromUrlParams() {
+        async function copyShareUrl() {
+            if (!window.isSecureContext) {
+                // HTTP: sync path — no async boundary, so execCommand keeps the user gesture
+                fallbackCopy(buildShareUrlSync());
+                showCopied();
+                return;
+            }
+            // HTTPS/localhost: compression + clipboard API
+            let url;
+            try {
+                url = await getShareUrl();
+                await navigator.clipboard.writeText(url);
+            } catch {
+                if (url) fallbackCopy(url);
+            }
+            showCopied();
+        }
+
+        async function loadFromUrlParams() {
             const params = new URLSearchParams(window.location.search);
             const g = params.get('g');
             const s = params.get('s');
             let changed = false;
             if (g != null) {
-                const decoded = b64decode(g);
+                const decoded = await decompressDecode(g);
                 if (decoded != null) {
                     grammarInput.value = decoded;
                     changed = true;
                 }
             }
             if (s != null) {
-                const decoded = b64decode(s);
+                const decoded = await decompressDecode(s);
                 if (decoded != null) {
                     stringInput.value = decoded;
                     changed = true;
@@ -1391,7 +1450,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         // Initial load
         const hasParams = new URLSearchParams(window.location.search).has('g') || new URLSearchParams(window.location.search).has('s');
         if (hasParams) {
-            loadFromUrlParams();
+            loadFromUrlParams().then();
         } else {
             grammarInput.value = GRAMMAR_DEFAULT;
             stringInput.value = STRING_DEFAULT;

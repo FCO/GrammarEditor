@@ -1452,7 +1452,16 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                 console.error('share: POST failed', e);
                 url = window.location.href;
             }
-            fallbackCopy(url);
+
+            // On HTTPS use clipboard API (works without user gesture).
+            // On HTTP use prompt() — user gesture is lost after await.
+            if (window.isSecureContext && navigator.clipboard) {
+                await navigator.clipboard.writeText(url).catch(function () {
+                    prompt('Copy this share URL:', url);
+                });
+            } else {
+                prompt('Copy this share URL:', url);
+            }
             showCopied();
         }
 

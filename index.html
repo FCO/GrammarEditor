@@ -94,6 +94,32 @@ body {
     color: #cdd6f4;
 }
 
+.toolbar-spacer {
+    flex: 1;
+}
+
+.toolbar-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: #a6adc8;
+    transition: background 0.15s, color 0.15s;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.toolbar-btn:hover {
+    background: #313244;
+    color: #cdd6f4;
+}
+
+.toolbar-btn.copied {
+    color: #a6e3a1;
+}
+
 #panel-toggles {
     display: flex;
     gap: 2px;
@@ -377,6 +403,8 @@ body {
             <span class="toggle-icon">👁</span>
             <span>Match</span>
         </label>
+        <span class="toolbar-spacer"></span>
+        <button class="toolbar-btn" id="btn-share" title="Copy shareable URL">🔗 Share</button>
     </div>
     <div id="panel-area">
         <div id="left-half">
@@ -1101,6 +1129,77 @@ async function openString() {
 }
 
 // ============================================================
+// URL Sharing
+// ============================================================
+function b64encode(str) {
+    return btoa(encodeURIComponent(str));
+}
+
+function b64decode(str) {
+    try {
+        return decodeURIComponent(atob(str));
+    } catch {
+        return null;
+    }
+}
+
+function getShareUrl() {
+    const g = b64encode(grammarInput.value);
+    const s = b64encode(stringInput.value);
+    const url = new URL(window.location.href);
+    url.search = '?g=' + g + '&s=' + s;
+    return url.href;
+}
+
+async function copyShareUrl() {
+    const url = getShareUrl();
+    try {
+        await navigator.clipboard.writeText(url);
+    } catch {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
+    const btn = document.getElementById('btn-share');
+    btn.textContent = '🔗 Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+        btn.textContent = '🔗 Share';
+        btn.classList.remove('copied');
+    }, 2000);
+}
+
+function loadFromUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const g = params.get('g');
+    const s = params.get('s');
+    let changed = false;
+    if (g != null) {
+        const decoded = b64decode(g);
+        if (decoded != null) {
+            grammarInput.value = decoded;
+            changed = true;
+        }
+    }
+    if (s != null) {
+        const decoded = b64decode(s);
+        if (decoded != null) {
+            stringInput.value = decoded;
+            changed = true;
+        }
+    }
+    if (changed) {
+        updateHighlight();
+        setTimeout(sendGrammar, 500);
+    }
+}
+
+// ============================================================
 // Event Setup
 // ============================================================
 const grammarInput = document.getElementById('grammar-code');
@@ -1185,10 +1284,18 @@ document.querySelectorAll('[data-action="save-string"]').forEach(b => b.addEvent
 document.querySelectorAll('[data-action="open-grammar"]').forEach(b => b.addEventListener('click', openGrammar));
 document.querySelectorAll('[data-action="open-string"]').forEach(b => b.addEventListener('click', openString));
 
+// Share button handler
+document.getElementById('btn-share').addEventListener('click', copyShareUrl);
+
 // Initial load
-grammarInput.value = GRAMMAR_DEFAULT;
-stringInput.value = STRING_DEFAULT;
-updateHighlight();
+const hasParams = new URLSearchParams(window.location.search).has('g') || new URLSearchParams(window.location.search).has('s');
+if (hasParams) {
+    loadFromUrlParams();
+} else {
+    grammarInput.value = GRAMMAR_DEFAULT;
+    stringInput.value = STRING_DEFAULT;
+    updateHighlight();
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     connectWS();

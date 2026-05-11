@@ -38,45 +38,27 @@ function setupDOM() {
 describe('highlightRaku', () => {
   beforeEach(() => setupDOM());
 
-  test('highlights keywords with hl-keyword class', () => {
-    const result = highlightRaku('token TOP { <digit>+ }');
-    expect(result).toContain('hl-keyword');
-    expect(result).toContain('token');
+  test('highlights grammar code', async () => {
+    const result = await highlightRaku('grammar Foo { token TOP { <digit>+ } }');
+    expect(result).toContain('grammar');
+    expect(result).toContain('<span');
+    expect(result).toContain('color:');
   });
 
-  test('highlights strings with hl-string class', () => {
-    const result = highlightRaku('my $s = "hello"');
-    expect(result).toContain('hl-string');
+  test('highlights strings', async () => {
+    const result = await highlightRaku('my $s = "hello"');
+    expect(result).toContain('hello');
+    expect(result).toContain('color:');
   });
 
-  test('highlights comments with hl-comment class', () => {
-    const result = highlightRaku('# this is a comment');
-    expect(result).toContain('hl-comment');
-  });
-
-  test('highlights rule names with hl-rule-name class', () => {
-    const result = highlightRaku('myrule{ <digit> }');
-    expect(result).toMatch(/hl-rule-name/);
-  });
-
-  test('highlights braces with hl-brace class', () => {
-    const result = highlightRaku('{ }');
-    expect(result).toContain('hl-brace');
-  });
-
-  test('highlights quantifiers with hl-quantifier class', () => {
-    const result = highlightRaku('<digit>+');
-    expect(result).toContain('hl-quantifier');
-  });
-
-  test('highlights alternation with hl-alt class', () => {
-    const result = highlightRaku('|| &&');
-    expect(result).toContain('hl-alt');
-  });
-
-  test('handles empty string', () => {
-    const result = highlightRaku('');
+  test('handles empty string', async () => {
+    const result = await highlightRaku('');
     expect(result).toBe('');
+  });
+
+  test('handles null/undefined', async () => {
+    expect(await highlightRaku(null)).toBe('');
+    expect(await highlightRaku(undefined)).toBe('');
   });
 });
 

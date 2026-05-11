@@ -146,6 +146,16 @@ my $app = route {
         my $html = slurp($*PROGRAM.parent.child('index.html'));
         content 'text/html', $html;
     }
+
+    # Static JS files
+    get -> 'js', $file {
+        my $full = $*PROGRAM.parent.child("js/$file");
+        if $full.e {
+            content 'application/javascript', $full.slurp;
+        } else {
+            not-found;
+        }
+    }
 }
 
 my $server = Cro::HTTP::Server.new(

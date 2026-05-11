@@ -6,7 +6,7 @@ Web-based grammar editor with a JS frontend and a Raku backend.
 
 - **Frontend**: `index.html` — single-file HTML/CSS/JS app. Connects to backend via WebSocket.
 - **Backend**: `server.raku` — Raku/Cro WebSocket server. Receives grammar code + input string, returns grammar trace + match results via JSON.
-- **Highlighting**: Custom Raku syntax highlighter (Rainbow-inspired) — tokenizes Raku grammar code in-browser with colored spans.
+- **Highlighting**: Uses [Shiki](https://shiki.style) with its built-in Raku TextMate grammar (`@shikijs/langs/raku`). Highlighted via `js/highlight.js` which imports Shiki from CDN (esm.sh) or node_modules in tests.
 
 ## Setup + commands
 

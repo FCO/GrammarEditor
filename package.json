@@ -9,5 +9,8 @@
   "devDependencies": {
     "happy-dom": "^15.0.0",
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "shiki": "^4.0.2"
   }
 }

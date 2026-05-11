@@ -266,21 +266,9 @@
         }
 
         #string-input {
-            width: 100%;
-            height: 100%;
-            padding: 10px;
-            border: none;
-            outline: none;
-            font-family: inherit;
-            font-size: inherit;
-            line-height: 1.5;
             resize: none;
-            background: #1e1e2e;
-            color: #cdd6f4;
-            position: relative;
-            z-index: 1;
         }
-
+ 
         #string-highlights {
             position: absolute;
             top: 10px;
@@ -289,7 +277,7 @@
             height: calc(100% - 20px);
             padding: 0;
             pointer-events: none;
-            z-index: 2;
+            z-index: 3;
             overflow: hidden;
         }
 
@@ -638,7 +626,7 @@
 
                 <div class="panel" id="string-panel">
                     <div class="panel-header">
-                        <span>String</span>
+                        <span>Input</span>
                         <div class="panel-header-btns">
                             <button class="panel-header-btn" data-action="save-string" title="Save as .txt">💾</button>
                             <button class="panel-header-btn" data-action="open-string"
@@ -648,6 +636,7 @@
                     <div class="panel-body">
                         <div class="editor-container">
                             <textarea id="string-input" spellcheck="false"></textarea>
+                            <pre id="string-colored"><code id="string-colored-output"></code></pre>
                             <div id="string-highlights"></div>
                         </div>
                     </div>
@@ -932,6 +921,111 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         }
 
         // ============================================================
+        // String Coloring (permanent foreground coloring by rule name)
+        // ============================================================
+        const STRING_COLOR_PALETTE = [
+            '#4d9375', '#cb7676', '#c98a7d', '#bd976a',
+            '#5DA994', '#80a665', '#b8a965', '#c99076',
+            '#e6cc77', '#6872ab', '#db889a', '#6394bf',
+        ];
+
+        let ruleColors = new Map();
+        let ruleColorIndex = 0;
+
+        function getRuleColor(ruleName) {
+            if (ruleName === 'TOP') return '#6c7086';
+            if (!ruleColors.has(ruleName)) {
+                ruleColors.set(ruleName, STRING_COLOR_PALETTE[ruleColorIndex % STRING_COLOR_PALETTE.length]);
+                ruleColorIndex++;
+            }
+            return ruleColors.get(ruleName);
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s != null ? String(s) : '';
+            return d.innerHTML;
+        }
+
+        function renderStringColored(match) {
+            const output = document.getElementById('string-colored-output');
+            const textarea = document.getElementById('string-input');
+            if (!output || !textarea) return;
+
+            const text = textarea.value;
+            if (!match || !text) {
+                output.innerHTML = text ? escapeHtml(text) : '';
+                return;
+            }
+
+            const nodes = [];
+            function collect(node, depth) {
+                if (node == null) return;
+                if (node.pos_start != null && node.pos_end != null) {
+                    nodes.push({
+                        start: node.pos_start,
+                        end: node.pos_end,
+                        rule: node.rule || 'TOP',
+                        depth: depth,
+                        isLeaf: !node.children || node.children.length === 0
+                    });
+                }
+                if (node.children) {
+                    for (const child of node.children) {
+                        collect(child, depth + 1);
+                    }
+                }
+            }
+            collect(match, 0);
+
+            if (nodes.length === 0) {
+                output.innerHTML = escapeHtml(text);
+                return;
+            }
+
+            const posRule = new Array(text.length);
+            for (let i = 0; i < text.length; i++) {
+                let bestDepth = -1;
+                let bestNode = null;
+                for (const node of nodes) {
+                    if (i >= node.start && i < node.end && node.depth > bestDepth) {
+                        bestDepth = node.depth;
+                        bestNode = node;
+                    }
+                }
+                posRule[i] = bestNode;
+            }
+
+            let html = '';
+            let i = 0;
+            while (i < text.length) {
+                const node = posRule[i];
+                let j = i + 1;
+                while (j < text.length && posRule[j] === node) j++;
+
+                const segment = text.slice(i, j);
+                const escaped = escapeHtml(segment);
+
+                if (node) {
+                    const color = getRuleColor(node.rule);
+                    const style = node.isLeaf ? 'color:' + color + ';font-style:italic' : 'color:' + color;
+                    html += '<span style="' + style + '">' + escaped + '</span>';
+                } else {
+                    html += escaped;
+                }
+
+                i = j;
+            }
+
+            output.innerHTML = html;
+        }
+
+        function clearStringColored() {
+            const output = document.getElementById('string-colored-output');
+            if (output) output.innerHTML = '';
+        }
+
+        // ============================================================
         // Match Rendering
         // ============================================================
         let matchNodeMap = new Map();
@@ -1047,6 +1141,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             clearTrace();
             clearMatch();
             clearMade();
+            clearStringColored();
         }
 
         function hideError() {
@@ -1143,6 +1238,8 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             else clearTrace();
             if (data.match) renderMatch(data.match);
             else clearMatch();
+            if (data.match) renderStringColored(data.match);
+            else renderStringColored(null);
             if (data.hasOwnProperty('made')) renderMade(data.made);
             else clearMade();
         }
@@ -1496,6 +1593,12 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             const pre = document.getElementById('actions-highlight');
             pre.scrollTop = actionsInput.scrollTop;
             pre.scrollLeft = actionsInput.scrollLeft;
+        });
+
+        stringInput.addEventListener('scroll', () => {
+            const pre = document.getElementById('string-colored');
+            pre.scrollTop = stringInput.scrollTop;
+            pre.scrollLeft = stringInput.scrollLeft;
         });
 
         // Tab handling

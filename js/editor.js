@@ -236,6 +236,102 @@ export function clearStringHighlights() {
     highlightEls = [];
 }
 
+const STRING_COLOR_PALETTE = [
+    '#4d9375', '#cb7676', '#c98a7d', '#bd976a',
+    '#5DA994', '#80a665', '#b8a965', '#c99076',
+    '#e6cc77', '#6872ab', '#db889a', '#6394bf',
+];
+
+let ruleColors = new Map();
+let ruleColorIndex = 0;
+
+export function getRuleColor(ruleName) {
+    if (ruleName === 'TOP') return '#6c7086';
+    if (!ruleColors.has(ruleName)) {
+        ruleColors.set(ruleName, STRING_COLOR_PALETTE[ruleColorIndex % STRING_COLOR_PALETTE.length]);
+        ruleColorIndex++;
+    }
+    return ruleColors.get(ruleName);
+}
+
+export function renderStringColored(match) {
+    const output = document.getElementById('string-colored-output');
+    const textarea = document.getElementById('string-input');
+    if (!output || !textarea) return;
+
+    const text = textarea.value;
+    if (!match || !text) {
+        output.innerHTML = text ? escapeHtml(text) : '';
+        return;
+    }
+
+    const nodes = [];
+    function collect(node, depth) {
+        if (node == null) return;
+        if (node.pos_start != null && node.pos_end != null) {
+            nodes.push({
+                start: node.pos_start,
+                end: node.pos_end,
+                rule: node.rule || 'TOP',
+                depth: depth,
+                isLeaf: !node.children || node.children.length === 0
+            });
+        }
+        if (node.children) {
+            for (const child of node.children) {
+                collect(child, depth + 1);
+            }
+        }
+    }
+    collect(match, 0);
+
+    if (nodes.length === 0) {
+        output.innerHTML = escapeHtml(text);
+        return;
+    }
+
+    const posRule = new Array(text.length);
+    for (let i = 0; i < text.length; i++) {
+        let bestDepth = -1;
+        let bestNode = null;
+        for (const node of nodes) {
+            if (i >= node.start && i < node.end && node.depth > bestDepth) {
+                bestDepth = node.depth;
+                bestNode = node;
+            }
+        }
+        posRule[i] = bestNode;
+    }
+
+    let html = '';
+    let i = 0;
+    while (i < text.length) {
+        const node = posRule[i];
+        let j = i + 1;
+        while (j < text.length && posRule[j] === node) j++;
+
+        const segment = text.slice(i, j);
+        const escaped = escapeHtml(segment);
+
+        if (node) {
+            const color = getRuleColor(node.rule);
+            const style = node.isLeaf ? 'color:' + color + ';font-style:italic' : 'color:' + color;
+            html += '<span style="' + style + '">' + escaped + '</span>';
+        } else {
+            html += escaped;
+        }
+
+        i = j;
+    }
+
+    output.innerHTML = html;
+}
+
+export function clearStringColored() {
+    const output = document.getElementById('string-colored-output');
+    if (output) output.innerHTML = '';
+}
+
 let matchNodeMap = new Map();
 let matchPosMap = new Map();
 

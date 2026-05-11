@@ -17,6 +17,9 @@ import {
   resetColors,
   highlightTraceNodeByPath,
   clearTraceHighlights,
+  getRuleColor,
+  renderStringColored,
+  clearStringColored,
 } from '../js/editor.js';
 
 function setupDOM() {
@@ -28,6 +31,7 @@ function setupDOM() {
     <div id="error-bar"></div>
     <div id="status-bar"></div>
     <textarea id="string-input"></textarea>
+    <pre id="string-colored"><code id="string-colored-output"></code></pre>
     <textarea id="grammar-code"></textarea>
     <pre id="grammar-highlight"><code id="highlight-output"></code></pre>
     <textarea id="actions-code"></textarea>
@@ -321,6 +325,82 @@ describe('showError / hideError', () => {
     document.getElementById('error-bar').className = 'visible';
     hideError();
     expect(document.getElementById('error-bar').className).toBe('');
+  });
+});
+
+describe('getRuleColor', () => {
+  beforeEach(() => setupDOM());
+
+  test('returns gray for TOP rule', () => {
+    expect(getRuleColor('TOP')).toBe('#6c7086');
+  });
+
+  test('returns consistent color for same rule name', () => {
+    const color1 = getRuleColor('vowel');
+    const color2 = getRuleColor('vowel');
+    expect(color1).toBe(color2);
+  });
+
+  test('returns different colors for different rule names', () => {
+    const color1 = getRuleColor('vowel');
+    const color2 = getRuleColor('consonant');
+    expect(color1).not.toBe(color2);
+  });
+});
+
+describe('renderStringColored / clearStringColored', () => {
+  beforeEach(() => setupDOM());
+
+  test('renders colored spans from match tree', () => {
+    document.getElementById('string-input').value = 'hello';
+    const match = {
+      rule: 'TOP', pos_start: 0, pos_end: 5,
+      children: [
+        { rule: 'letter', pos_start: 0, pos_end: 1, children: [
+          { rule: 'consonant', pos_start: 0, pos_end: 1 }
+        ]},
+        { rule: 'letter', pos_start: 1, pos_end: 2, children: [
+          { rule: 'vowel', pos_start: 1, pos_end: 2 }
+        ]},
+      ]
+    };
+    renderStringColored(match);
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).toContain('<span');
+    expect(output.innerHTML).toContain('color:');
+    expect(output.innerHTML).toContain('font-style:italic');
+    expect(output.textContent).toBe('hello');
+  });
+
+  test('clears output on clearStringColored', () => {
+    document.getElementById('string-input').value = 'test';
+    const match = { rule: 'TOP', pos_start: 0, pos_end: 4 };
+    renderStringColored(match);
+    clearStringColored();
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).toBe('');
+  });
+
+  test('shows raw text when match is null', () => {
+    document.getElementById('string-input').value = 'hello';
+    renderStringColored(null);
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).toBe('hello');
+    expect(output.innerHTML).not.toContain('<span');
+  });
+
+  test('handles empty string', () => {
+    document.getElementById('string-input').value = '';
+    const match = { rule: 'TOP', pos_start: 0, pos_end: 0 };
+    renderStringColored(match);
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).toBe('');
+  });
+
+  test('no errors when elements are missing', () => {
+    document.body.innerHTML = '';
+    expect(() => renderStringColored(null)).not.toThrow();
+    expect(() => clearStringColored()).not.toThrow();
   });
 });
 

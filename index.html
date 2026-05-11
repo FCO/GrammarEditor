@@ -159,6 +159,17 @@
             color: #a6e3a1;
         }
 
+        .toolbar-btn.disabled {
+            opacity: 0.35;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .toolbar-btn.disabled:hover {
+            background: none;
+            color: #a6adc8;
+        }
+
         #panel-toggles {
             display: flex;
             gap: 2px;
@@ -573,6 +584,16 @@
                 <span class="toggle-icon">👁</span>
                 <span>Match</span>
             </label>
+            <label class="panel-toggle" data-panel="grammar">
+                <input type="checkbox" checked>
+                <span class="toggle-icon">👁</span>
+                <span>Grammar</span>
+            </label>
+            <label class="panel-toggle" data-panel="string">
+                <input type="checkbox" checked>
+                <span class="toggle-icon">👁</span>
+                <span>Input</span>
+            </label>
             <label class="panel-toggle" data-panel="actions">
                 <input type="checkbox">
                 <span class="toggle-icon">👁</span>
@@ -583,6 +604,8 @@
                 <span class="toggle-icon">👁</span>
                 <span>Made</span>
             </label>
+            <button class="toolbar-btn" id="btn-dsl" title="DSL: show Input + Made only">DSL</button>
+            <button class="toolbar-btn" id="btn-pro" title="PRO: show all panels">PRO</button>
             <span class="toolbar-spacer"></span>
             <button class="toolbar-btn" id="btn-share" title="Copy shareable URL">🔗 Share</button>
         </div>
@@ -1426,6 +1449,11 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                 vis[toggle.dataset.panel] = cb.checked;
             });
 
+            ['grammar', 'string'].forEach(function (id) {
+                var el = document.getElementById(id + '-panel');
+                if (el) vis[id] = !el.classList.contains('collapsed');
+            });
+
             function getFlex(el) {
                 if (!el || el.classList.contains('collapsed') || getComputedStyle(el).display === 'none') return null;
                 var flex = el.style.flex;
@@ -1455,6 +1483,8 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                 for (var k in lp) lp[k] /= total;
             }
             if (Object.keys(lp).length > 0) sizes.leftPanels = lp;
+
+            // Capture collapsed state for grammar and string (header-toggle panels)
 
             var rp = {};
             var tp = document.getElementById('trace-panel');
@@ -1596,6 +1626,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
 
             updateRightHalf();
             setupResizeHandles();
+            updateViewModeButtons();
         }
 
         // ============================================================
@@ -1721,9 +1752,64 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                 if (panel) {
                     panel.classList.toggle('collapsed', !this.checked);
                     updateRightHalf();
+                    updateViewModeButtons();
                 }
             });
         });
+
+        function isPanelCollapsed(id) {
+            var el = document.getElementById(id + '-panel');
+            return !el || el.classList.contains('collapsed');
+        }
+
+        function updateViewModeButtons() {
+            var dsl = document.getElementById('btn-dsl');
+            var pro = document.getElementById('btn-pro');
+            if (!dsl || !pro) return;
+
+            var dslActive = isPanelCollapsed('grammar') && isPanelCollapsed('actions') &&
+                isPanelCollapsed('trace') && isPanelCollapsed('match') &&
+                !isPanelCollapsed('string') && !isPanelCollapsed('made');
+
+            var proActive = !isPanelCollapsed('grammar') && !isPanelCollapsed('actions') &&
+                !isPanelCollapsed('trace') && !isPanelCollapsed('match') &&
+                !isPanelCollapsed('string') && !isPanelCollapsed('made');
+
+            dsl.classList.toggle('disabled', dslActive);
+            pro.classList.toggle('disabled', proActive);
+        }
+
+        document.getElementById('btn-dsl').addEventListener('click', function () {
+            if (this.classList.contains('disabled')) return;
+            setPanel('grammar', false);
+            setPanel('actions', false);
+            setPanel('trace', false);
+            setPanel('match', false);
+            setPanel('string', true);
+            setPanel('made', true);
+            updateRightHalf();
+            updateViewModeButtons();
+        });
+
+        document.getElementById('btn-pro').addEventListener('click', function () {
+            if (this.classList.contains('disabled')) return;
+            setPanel('grammar', true);
+            setPanel('actions', true);
+            setPanel('trace', true);
+            setPanel('match', true);
+            setPanel('string', true);
+            setPanel('made', true);
+            updateRightHalf();
+            updateViewModeButtons();
+        });
+
+        function setPanel(id, visible) {
+            var el = document.getElementById(id + '-panel');
+            if (!el) return;
+            el.classList.toggle('collapsed', !visible);
+            var toggle = document.querySelector('.panel-toggle[data-panel="' + id + '"] input');
+            if (toggle) toggle.checked = visible;
+        }
 
         // ============================================================
         // Resize Handles
@@ -1790,13 +1876,13 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             // Between grammar and actions panels
             var grammarPanel = document.getElementById('grammar-panel');
             var actionsPanel = document.getElementById('actions-panel');
-            if (grammarPanel && actionsPanel && !actionsPanel.classList.contains('collapsed')) {
+            if (grammarPanel && actionsPanel && !grammarPanel.classList.contains('collapsed') && !actionsPanel.classList.contains('collapsed')) {
                 insertResizeHandle(grammarPanel, actionsPanel, 'row');
             }
 
             // Between actions and string panels
             var stringPanel = document.getElementById('string-panel');
-            if (actionsPanel && stringPanel && !actionsPanel.classList.contains('collapsed')) {
+            if (actionsPanel && stringPanel && !actionsPanel.classList.contains('collapsed') && !stringPanel.classList.contains('collapsed')) {
                 insertResizeHandle(actionsPanel, stringPanel, 'row');
             }
 
@@ -1848,6 +1934,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         document.addEventListener('DOMContentLoaded', () => {
             connectWS();
             setupResizeHandles();
+            updateViewModeButtons();
             // Initial send after a small delay for WS to connect
             setTimeout(sendGrammar, 500);
         });

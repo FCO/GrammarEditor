@@ -351,20 +351,20 @@ describe('getRuleColor', () => {
 describe('renderStringColored / clearStringColored', () => {
   beforeEach(() => setupDOM());
 
-  test('renders colored spans from match tree', () => {
+  test('renders colored spans from trace tree', () => {
     document.getElementById('string-input').value = 'hello';
-    const match = {
-      rule: 'TOP', pos_start: 0, pos_end: 5,
+    const trace = {
+      rule: 'TOP', pos_start: 0, pos_end: 5, match: true,
       children: [
-        { rule: 'letter', pos_start: 0, pos_end: 1, children: [
-          { rule: 'consonant', pos_start: 0, pos_end: 1 }
+        { rule: 'letter', pos_start: 0, pos_end: 1, match: true, children: [
+          { rule: 'consonant', pos_start: 0, pos_end: 1, match: true }
         ]},
-        { rule: 'letter', pos_start: 1, pos_end: 2, children: [
-          { rule: 'vowel', pos_start: 1, pos_end: 2 }
+        { rule: 'letter', pos_start: 1, pos_end: 2, match: true, children: [
+          { rule: 'vowel', pos_start: 1, pos_end: 2, match: true }
         ]},
       ]
     };
-    renderStringColored(match);
+    renderStringColored(trace);
     const output = document.getElementById('string-colored-output');
     expect(output.innerHTML).toContain('<span');
     expect(output.innerHTML).toContain('color:');
@@ -374,8 +374,8 @@ describe('renderStringColored / clearStringColored', () => {
 
   test('clears output on clearStringColored', () => {
     document.getElementById('string-input').value = 'test';
-    const match = { rule: 'TOP', pos_start: 0, pos_end: 4 };
-    renderStringColored(match);
+    const trace = { rule: 'TOP', pos_start: 0, pos_end: 4, match: true };
+    renderStringColored(trace);
     clearStringColored();
     const output = document.getElementById('string-colored-output');
     expect(output.innerHTML).toBe('');
@@ -391,8 +391,8 @@ describe('renderStringColored / clearStringColored', () => {
 
   test('handles empty string', () => {
     document.getElementById('string-input').value = '';
-    const match = { rule: 'TOP', pos_start: 0, pos_end: 0 };
-    renderStringColored(match);
+    const trace = { rule: 'TOP', pos_start: 0, pos_end: 0, match: false };
+    renderStringColored(trace);
     const output = document.getElementById('string-colored-output');
     expect(output.innerHTML).toBe('');
   });

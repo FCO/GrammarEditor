@@ -21,31 +21,20 @@ export function debounce(fn, ms) {
     };
 }
 
-export const COLOR_PALETTE = [
-    '#89b4fa', '#a6e3a1', '#f9e2af', '#fab387', '#f38ba8',
-    '#cba6f7', '#89dceb', '#f5c2e7', '#b4befe', '#94e2d5',
-    '#74c7ec', '#eba0ac', '#f2cdcd', '#a6adc8', '#bac2de'
-];
-
-let colorIndex = 0;
-let nodeColors = new Map();
-
 export function getNodeColor(nodeId) {
-    if (!nodeColors.has(nodeId)) {
-        nodeColors.set(nodeId, COLOR_PALETTE[colorIndex % COLOR_PALETTE.length]);
-        colorIndex++;
-    }
-    return nodeColors.get(nodeId);
+    // nodeId format: "/TOP/0/letter/0/vowel" — extract rule name from last segment
+    const parts = nodeId.split('/');
+    const ruleName = parts[parts.length - 1];
+    return getRuleColor(ruleName);
 }
 
 export function resetColors() {
-    colorIndex = 0;
-    nodeColors = new Map();
+    ruleColors = new Map();
+    ruleColorIndex = 0;
 }
 
 export function renderTrace(tree) {
     const body = document.getElementById('trace-body');
-    resetColors();
     traceNodeMap = new Map();
     body.innerHTML = '';
     if (!tree) return;
@@ -268,7 +257,7 @@ export function renderStringColored(match) {
     const nodes = [];
     function collect(node, depth) {
         if (node == null) return;
-        if (node.pos_start != null && node.pos_end != null) {
+        if (node.pos_start != null && node.pos_end != null && node.match) {
             nodes.push({
                 start: node.pos_start,
                 end: node.pos_end,

@@ -1,8 +1,10 @@
-## ADDED Requirements
+## Purpose
 
+Define the UI behavior for the Raku Grammar Editor, including panel layout, syntax highlighting, WebSocket communication, trace/match display, sharing, and responsive mobile layout.
+## Requirements
 ### Requirement: Four-panel layout
 
-The UI SHALL display four panels. On screens wider than 768px, the layout SHALL be a left-half/right-half layout with the grammar editor and input string on the left (top/bottom) and trace and match on the right (left/right). On screens 768px or narrower, the panels SHALL stack vertically in a single column in this order: grammar editor, input string, trace, match. Each panel SHALL have a minimum height of 200px on narrow screens. The trace and match panels SHALL each have a visible toggle in their header that lets users hide or show the panel. When hidden, the remaining panels SHALL expand to fill the available space. The grammar and string panel headers SHALL include save and open buttons.
+The UI SHALL display four panels. On screens wider than 768px, the layout SHALL be a left-half/right-half layout with the grammar editor and input string on the left (top/bottom) and trace and match on the right (left/right). On screens 768px or narrower, the panels SHALL stack vertically in a single column in this order: grammar editor, input string, trace, match. Each panel SHALL have a minimum height of 200px on narrow screens. The grammar and actions editor panels SHALL render their full text content without clipping — the textarea and syntax-highlight `<pre>` SHALL fill the available panel body height on all viewport sizes.
 
 #### Scenario: Layout renders correctly on load
 
@@ -18,6 +20,18 @@ The UI SHALL display four panels. On screens wider than 768px, the layout SHALL 
 - **THEN** the four panels stack vertically in a single column
 - **AND** each panel has a minimum height of 200px
 - **AND** the page is vertically scrollable
+
+#### Scenario: Grammar editor shows full text on mobile
+
+- **WHEN** the grammar editor contains code and the viewport is 768px or narrower
+- **THEN** the full text of the grammar code is visible in the editor
+- **AND** no part of the text is clipped or obscured by overlapping elements
+
+#### Scenario: Actions editor shows full text on mobile
+
+- **WHEN** the actions editor contains code and the viewport is 768px or narrower
+- **THEN** the full text of the actions code is visible in the editor
+- **AND** no part of the text is clipped or obscured by overlapping elements
 
 ### Requirement: Rainbow syntax highlighting
 
@@ -357,3 +371,4 @@ The resize handles SHALL be created dynamically by JavaScript. The handle creati
 #### Scenario: Handles update on panel toggle
 - **WHEN** a panel is shown or hidden via toggle
 - **THEN** the adjacent resize handles are shown or hidden accordingly
+

@@ -408,6 +408,61 @@ describe('renderStringColored / clearStringColored', () => {
   });
 });
 
+describe('renderStringColored unmatched highlighting', () => {
+  beforeEach(() => setupDOM());
+
+  test('unmatched tail gets .unmatched-char span', () => {
+    document.getElementById('string-input').value = '123abc';
+    const trace = {
+      rule: 'TOP', pos_start: 0, pos_end: 6, match: false,
+      children: [
+        { rule: 'digit', pos_start: 0, pos_end: 1, match: true },
+        { rule: 'digit', pos_start: 1, pos_end: 2, match: true },
+        { rule: 'digit', pos_start: 2, pos_end: 3, match: true },
+      ]
+    };
+    renderStringColored(trace);
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).toContain('class="unmatched-char"');
+    expect(output.innerHTML).toContain('color:#6c7086');
+    expect(output.textContent).toBe('123abc');
+  });
+
+  test('full match shows no unmatched-char', () => {
+    document.getElementById('string-input').value = 'hello';
+    const trace = {
+      rule: 'TOP', pos_start: 0, pos_end: 5, match: true,
+      children: [
+        { rule: 'letter', pos_start: 0, pos_end: 5, match: true }
+      ]
+    };
+    renderStringColored(trace);
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).not.toContain('unmatched-char');
+    expect(output.innerHTML).not.toContain('wavy');
+    expect(output.textContent).toBe('hello');
+  });
+
+  test('no matched nodes returns raw text', () => {
+    document.getElementById('string-input').value = 'abc';
+    const trace = {
+      rule: 'TOP', pos_start: 0, pos_end: 3, match: false
+    };
+    renderStringColored(trace);
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).toBe('abc');
+    expect(output.innerHTML).not.toContain('span');
+  });
+
+  test('empty input renders empty', () => {
+    document.getElementById('string-input').value = '';
+    const trace = { rule: 'TOP', pos_start: 0, pos_end: 0, match: false };
+    renderStringColored(trace);
+    const output = document.getElementById('string-colored-output');
+    expect(output.innerHTML).toBe('');
+  });
+});
+
 describe('extendStringColoring', () => {
   beforeEach(() => {
     setupDOM();

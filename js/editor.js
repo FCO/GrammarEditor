@@ -325,17 +325,26 @@ export function renderStringColored(match) {
         return;
     }
 
-    const nodes = [];
+    const matched = [];
+    const allNodes = [];
     function collect(node, depth) {
         if (node == null) return;
-        if (node.pos_start != null && node.pos_end != null && node.match) {
-            nodes.push({
+        if (node.pos_start != null && node.pos_end != null) {
+            allNodes.push({
                 start: node.pos_start,
                 end: node.pos_end,
                 rule: node.rule || 'TOP',
-                depth: depth,
-                isLeaf: !node.children || node.children.length === 0
+                depth: depth
             });
+            if (node.match) {
+                matched.push({
+                    start: node.pos_start,
+                    end: node.pos_end,
+                    rule: node.rule || 'TOP',
+                    depth: depth,
+                    isLeaf: !node.children || node.children.length === 0
+                });
+            }
         }
         if (node.children) {
             for (const child of node.children) {
@@ -345,7 +354,7 @@ export function renderStringColored(match) {
     }
     collect(match, 0);
 
-    if (nodes.length === 0) {
+    if (matched.length === 0) {
         output.innerHTML = escapeHtml(text);
         return;
     }
@@ -354,13 +363,26 @@ export function renderStringColored(match) {
     for (let i = 0; i < text.length; i++) {
         let bestDepth = -1;
         let bestNode = null;
-        for (const node of nodes) {
+        for (const node of matched) {
             if (i >= node.start && i < node.end && node.depth > bestDepth) {
                 bestDepth = node.depth;
                 bestNode = node;
             }
         }
         posRule[i] = bestNode;
+    }
+
+    const enclosingRule = new Array(text.length);
+    for (let i = 0; i < text.length; i++) {
+        let bestDepth = -1;
+        let bestNode = null;
+        for (const node of allNodes) {
+            if (i >= node.start && i < node.end && node.depth > bestDepth) {
+                bestDepth = node.depth;
+                bestNode = node;
+            }
+        }
+        enclosingRule[i] = bestNode;
     }
 
     let html = '';
@@ -378,7 +400,9 @@ export function renderStringColored(match) {
             const style = node.isLeaf ? 'color:' + color + ';font-style:italic' : 'color:' + color;
             html += '<span style="' + style + '">' + escaped + '</span>';
         } else {
-            html += escaped;
+            const enclosing = enclosingRule[i];
+            const color = enclosing ? getRuleColor(enclosing.rule) : '#6c7086';
+            html += '<span class="unmatched-char" style="color:' + color + '">' + escaped + '</span>';
         }
 
         i = j;

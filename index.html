@@ -99,124 +99,52 @@
         .panel-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 6px 12px;
+            padding: 6px 10px;
+            background: #181825;
             font-size: 12px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            background: #181825;
-            color: #a6adc8;
-            border-bottom: 1px solid #313244;
+            color: #6c7086;
             user-select: none;
+            flex-shrink: 0;
+            gap: 8px;
         }
 
         .panel-header-btns {
+            margin-left: auto;
             display: flex;
-            gap: 6px;
+            gap: 4px;
         }
 
         .panel-header-btn {
             background: none;
             border: none;
+            color: #6c7086;
             cursor: pointer;
-            font-size: 14px;
             padding: 2px 4px;
-            border-radius: 4px;
+            font-size: 14px;
+            border-radius: 3px;
             line-height: 1;
-            color: #a6adc8;
-            transition: background 0.15s, color 0.15s;
         }
 
         .panel-header-btn:hover {
-            background: #313244;
+            background: rgba(255, 255, 255, 0.08);
             color: #cdd6f4;
-        }
-
-        .toolbar-spacer {
-            flex: 1;
-        }
-
-        .toolbar-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
-            padding: 4px 10px;
-            border-radius: 4px;
-            color: #a6adc8;
-            transition: background 0.15s, color 0.15s;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-
-        .toolbar-btn:hover {
-            background: #313244;
-            color: #cdd6f4;
-        }
-
-        .toolbar-btn.copied {
-            color: #a6e3a1;
-        }
-
-        #panel-toggles {
-            display: flex;
-            gap: 2px;
-            padding: 4px 8px;
-            background: #181825;
-            border-bottom: 1px solid #313244;
-            flex-shrink: 0;
-        }
-
-        .panel-toggle {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-            color: #a6adc8;
-            padding: 2px 8px 2px 4px;
-            border-radius: 4px;
-            transition: background 0.15s;
-        }
-
-        .panel-toggle:hover {
-            background: #313244;
-        }
-
-        .panel-toggle input {
-            display: none;
-        }
-
-        .panel-toggle .toggle-icon {
-            font-size: 13px;
-            line-height: 1;
-            opacity: 0.6;
-            transition: opacity 0.15s;
-        }
-
-        .panel-toggle:hover .toggle-icon {
-            opacity: 1;
-        }
-
-        .panel-toggle input:not(:checked)~.toggle-icon {
-            opacity: 0.25;
-        }
-
-        .panel-toggle input:not(:checked)~span {
-            opacity: 0.4;
-        }
-
-        .panel.collapsed {
-            display: none;
         }
 
         .panel-body {
             flex: 1;
             overflow: auto;
             position: relative;
+        }
+
+        #trace-body,
+        #match-body,
+        #made-body {
+            padding: 0;
+            font-size: 13px;
+            line-height: 1.6;
         }
 
         .editor-container {
@@ -398,21 +326,46 @@
             flex-shrink: 0;
         }
 
-        #error-bar {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 8px 12px;
-            background: rgba(243, 139, 168, 0.12);
-            border-top: 1px solid rgba(243, 139, 168, 0.3);
-            color: #f38ba8;
+        .match-node {
+            padding: 3px 8px 3px 16px;
             font-size: 13px;
-            line-height: 1.4;
-            max-height: 80px;
-            overflow-y: auto;
-            z-index: 50;
+            line-height: 1.6;
+            cursor: default;
+            display: flex;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .match-node:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .match-rule-name {
+            font-weight: 600;
+            color: #89b4fa;
+        }
+
+        .match-data {
+            color: #a6e3a1;
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .match-children {
+            padding-left: 12px;
+            width: 100%;
+        }
+
+        #error-bar {
+            padding: 8px 12px;
+            background: #f38ba8;
+            color: #1e1e2e;
+            font-size: 13px;
+            display: none;
+            flex-shrink: 0;
         }
 
         #error-bar.visible {
@@ -420,16 +373,12 @@
         }
 
         #status-bar {
-            position: fixed;
-            bottom: 8px;
-            right: 12px;
-            padding: 4px 10px;
+            padding: 4px 12px;
             font-size: 11px;
-            border-radius: 4px;
-            background: rgba(24, 24, 37, 0.9);
-            color: #6c7086;
-            z-index: 100;
-            transition: all 0.3s;
+            color: #585b70;
+            background: #11111b;
+            flex-shrink: 0;
+            text-align: center;
         }
 
         #status-bar.connected {
@@ -438,102 +387,110 @@
 
         #status-bar.reconnecting {
             color: #f9e2af;
-            animation: pulse 1.5s infinite;
         }
 
         #status-bar.error {
             color: #f38ba8;
         }
 
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.5;
-            }
+        /* Panel toggles bar */
+        #panel-toggles {
+            display: flex;
+            padding: 4px 10px;
+            gap: 12px;
+            background: #11111b;
+            flex-shrink: 0;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
-        .match-node {
-            padding: 2px 0 2px 16px;
-            font-size: 13px;
-            line-height: 1.6;
+        .panel-toggle {
+            font-size: 12px;
+            color: #6c7086;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            user-select: none;
         }
 
-        .match-rule-name {
-            font-weight: 500;
+        .panel-toggle input {
+            accent-color: #89b4fa;
+            cursor: pointer;
         }
 
-        .match-data {
-            color: #a6e3a1;
-            margin-left: 4px;
+        .toggle-icon {
+            font-size: 10px;
         }
 
-        .match-children {
-            padding-left: 16px;
+        .toolbar-spacer {
+            flex: 1;
         }
 
-        #trace-body,
-        #match-body {
-            padding: 4px 0;
-            font-size: 13px;
-        }
-
-        .resize-handle {
-            flex: 0 0 4px;
-            position: relative;
-            background: #313244;
+        .toolbar-btn {
+            background: none;
+            border: 1px solid #45475a;
+            color: #cdd6f4;
+            cursor: pointer;
+            padding: 2px 8px;
+            font-size: 12px;
+            border-radius: 4px;
             transition: background 0.15s;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .toolbar-btn.copied {
+            border-color: #a6e3a1;
+            color: #a6e3a1;
+        }
+
+        /* Resize handles */
+        .resize-handle {
+            flex-shrink: 0;
             z-index: 10;
-        }
-
-        .resize-handle:hover {
-            background: #585b70;
-        }
-
-        .resize-handle.dir-row {
-            cursor: row-resize;
+            background: transparent;
+            transition: background 0.15s;
         }
 
         .resize-handle.dir-col {
+            width: 4px;
             cursor: col-resize;
         }
 
-        .resize-handle.resizing {
+        .resize-handle.dir-col:hover,
+        .resize-handle.dir-col.resizing {
+            background: #89b4fa;
+        }
+
+        .resize-handle.dir-row {
+            height: 4px;
+            cursor: row-resize;
+        }
+
+        .resize-handle.dir-row:hover,
+        .resize-handle.dir-row.resizing {
             background: #89b4fa;
         }
 
         body.resizing {
             user-select: none;
-            -webkit-user-select: none;
+            pointer-events: none;
+        }
+
+        /* Make trace and match panels visible */
+        .panel-header.my-header {
+            color: #cdd6f4;
         }
 
         @media (max-width: 768px) {
-
-            html,
-            body {
-                overflow: auto;
-            }
-
-            #app {
-                height: auto;
-                min-height: 100vh;
-            }
-
             #panel-area {
                 flex-direction: column;
             }
 
-            #left-half,
-            #right-half {
-                flex: none;
-                width: 100%;
-            }
-
-            #right-half {
+            #right-top-row {
                 flex-direction: column;
             }
 
@@ -541,18 +498,21 @@
                 min-height: 200px;
             }
 
-            .panel-body {
-                min-height: 0;
-                overflow: hidden;
+            #right-top-row>.panel {
+                flex: 1;
+            }
+
+            #made-panel {
+                flex: 0 0 200px;
             }
 
             .editor-container {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                height: auto;
+                height: 200px;
+                min-height: 200px;
+            }
+
+            .panel-body {
+                min-height: 200px;
             }
 
             #string-highlights {
@@ -561,14 +521,6 @@
             }
         }
     </style>
-
-    <script type="importmap">
-        {
-            "imports": {
-                "shiki": "https://esm.sh/shiki@4.0.2?bundle"
-            }
-        }
-    </script>
 </head>
 
 <body>
@@ -677,36 +629,207 @@
     <input type="file" id="grammar-file-input" accept=".rakumod,.raku,.grammar" style="display:none">
     <input type="file" id="string-file-input" accept=".txt" style="display:none">
 
-    <div id="status-bar">Disconnected</div>
+    <div id="status-bar">Loading...</div>
     <div id="error-bar"></div>
 
-    <script>
-        const GRAMMAR_DEFAULT = `unit grammar MyGrammar;
+    <script src="perl6.js" defer></script>
 
+    <script type="text/perl6">
+use MONKEY-SEE-NO-EVAL;
+
+sub to-json($val) {
+    given $val {
+        when Hash {
+            my @parts;
+            for .kv -> $k, $v {
+                @parts.push: to-json(~$k) ~ ':' ~ to-json($v);
+            }
+            return '{' ~ @parts.join(',') ~ '}';
+        }
+        when Array {
+            return '[' ~ $_.map({ to-json($_) }).join(',') ~ ']';
+        }
+        when Str {
+            my $esc = $_.trans(['"','\\',"\n","\t","\r"] => ['\"','\\\\','\n','\t','\r']);
+            return '"' ~ $esc ~ '"';
+        }
+        when Int { return ~$_; }
+        when Num { return ~$_; }
+        when Bool { return $_ ?? 'true' !! 'false'; }
+        default { return '"' ~ .Str.trans(['"','\\'] => ['\"','\\\\']) ~ '"'; }
+    }
+}
+
+sub serialize-match($m, :$rule-name = 'TOP') {
+    my %node = :rule($rule-name), :data($m.Str), :pos_start($m.from), :pos_end($m.to);
+    my @children;
+    if $m.hash -> %h {
+        for %h.kv -> $name, $val {
+            my @subs = $val ~~ List ?? $val.list !! ($val,);
+            for @subs -> $sub {
+                @children.push: serialize-match($sub, :rule-name($name));
+            }
+        }
+    }
+    if $m.list -> @l {
+        for @l.kv -> $i, $sub {
+            @children.push: serialize-match($sub, :rule-name(~$i));
+        }
+    }
+    %node<children> = @children if @children;
+    return %node;
+}
+
+sub process-grammar($grammar-name, $string, $actions-class?) {
+    CATCH {
+        default {
+            EVAL :lang<JavaScript>, 'window._grammarResult(' ~ to-json({error => .Str}) ~ ')';
+            return;
+        }
+    }
+    my $grammar = ::($grammar-name);
+    my $actions-obj;
+    if $actions-class.defined && $actions-class.trim {
+        $actions-obj = ::($actions-class).new;
+    }
+    my $match = $actions-obj.defined
+        ?? $grammar.parse($string, :actions($actions-obj))
+        !! $grammar.parse($string);
+    my %result;
+    if $match {
+        %result<match> = serialize-match($match);
+        my $made = $match.made;
+        %result<made> = $made.raku if $made.defined;
+    }
+    EVAL :lang<JavaScript>, 'window._grammarResult(' ~ to-json(%result) ~ ')';
+}
+
+EVAL :lang<JavaScript>, 'window._perl6Ready()';
+    </script>
+
+    <script>
+        const GRAMMAR_DEFAULT = `grammar MyGrammar {
 token TOP       { <letter>+ }
 token letter    { <vowel> || <consonant> }
 token vowel     { <[aeiou]> }
-token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
+token consonant { <[bcdfghjklmnpqrstvwxyz]> }
+}`;
 
         const STRING_DEFAULT = `hello`;
 
-        // ============================================================
-        // Raku Grammar Syntax Highlighting
-        // ============================================================
-        let _highlightRaku = null;
-        async function getHighlightRaku() {
-            if (!_highlightRaku) {
-                try {
-                    const m = await import('./js/highlight.js');
-                    _highlightRaku = m.default;
-                } catch {
-                    _highlightRaku = function (c) {
-                        return c ? c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
-                    };
-                }
-            }
-            return _highlightRaku;
+        const RAKU_KEYWORDS = /\b(grammar|token|rule|regex|method|proto|multi|use|unit|module|class|role|sub|my|our|has|returns|is|where|does|but|also|of|as)\b/;
+        const BUILTIN_KEYWORDS = /\b(say|print|put|note|dd|die|fail|warn|return|require|need|use|import)\b/;
+
+        function escapeHtml(s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
+
+        function span(cls, text) {
+            return '<span class="' + cls + '">' + escapeHtml(text) + '</span>';
+        }
+
+        function highlightRaku(code) {
+            if (!code) return '';
+            let html = '';
+            const chars = [...code];
+            const len = chars.length;
+            let i = 0;
+
+            while (i < len) {
+                const ch = chars[i];
+                const rest = code.slice(i);
+
+                if (ch === '#') {
+                    let j = i; while (j < len && chars[j] !== '\n') j++;
+                    html += span('hl-comment', code.slice(i, j)); i = j; continue;
+                }
+                if (ch === "'" || ch === '"') {
+                    const quote = ch; let j = i + 1; let esc = false;
+                    while (j < len) { if (esc) { esc = false; j++; continue; } if (chars[j] === '\\') { esc = true; j++; continue; } if (chars[j] === quote) { j++; break; } j++; }
+                    html += span('hl-string', code.slice(i, j)); i = j; continue;
+                }
+                if (ch === '<' && i + 2 < len) {
+                    const next = code.slice(i);
+                    if (/^<\?before\s/.test(next) || /^<!\s*before\s/.test(next) || /^<\?after\s/.test(next) || /^<!\s*after\s/.test(next) || /^<\?\{/.test(next) || /^<!\s?\{/.test(next)) {
+                        let depth = 1, j = i + 1; while (j < len && depth > 0) { if (chars[j] === '>') depth--; else if (chars[j] === '<') depth++; j++; }
+                        html += span('hl-assertion', code.slice(i, j)); i = j; continue;
+                    }
+                    if (/^<\[/.test(next) || /^<\-\[/.test(next) || /^<\+\(/.test(next) || /^<\-\(/.test(next)) {
+                        let j = i + 1; while (j < len && chars[j] !== '>') j++; if (j < len) j++;
+                        html += span('hl-charclass', code.slice(i, j)); i = j; continue;
+                    }
+                    let j = i + 1; while (j < len && chars[j] !== '>') j++;
+                    if (j < len) { j++; const name = code.slice(i + 1, j - 1); if (/^[a-zA-Z_]\w*$/.test(name)) { html += span(/^[a-z]/.test(name) ? 'hl-rx-builtin' : 'hl-rule-call', code.slice(i, j)); i = j; continue; } }
+                    html += escapeHtml(ch); i++; continue;
+                }
+                if (ch === '$' || ch === '@' || ch === '%' || ch === '&') {
+                    if (rest.length >= 2) { const n = rest[1];
+                        if (n === '!' || n === '?' || n === '*' || n === '^' || n === '=' || n === '.') { let j = i + 2; while (j < len && /\w/.test(chars[j])) j++; html += span('hl-variable', code.slice(i, j)); i = j; continue; }
+                        if (n === '/') { html += span('hl-variable', code.slice(i, i + 2)); i += 2; continue; }
+                        if (/\w/.test(n)) { let j = i + 1; while (j < len && (/\w/.test(chars[j]) || chars[j] === "'" || chars[j] === '-')) j++; html += span('hl-variable', code.slice(i, j)); i = j; continue; }
+                        if (/[0-9]/.test(n)) { let j = i + 1; while (j < len && /\w/.test(chars[j])) j++; html += span('hl-variable', code.slice(i, j)); i = j; continue; }
+                        if (ch === '$' && (n === '/' || n === '_' || n === '!' || n === '~' || n === '=' || n === '?' || n === '%')) { html += span('hl-variable', code.slice(i, i + 2)); i += 2; continue; }
+                    }
+                    html += escapeHtml(ch); i++; continue;
+                }
+                if (ch === ':' && i + 1 < len && /[a-zA-Z<\[(:]/.test(chars[i + 1])) {
+                    let j = i + 1; if (chars[j] === '(' || chars[j] === '[' || chars[j] === '<') { const close = chars[j] === '(' ? ')' : chars[j] === '[' ? ']' : '>'; j++; let depth = 1; while (j < len && depth > 0) { if (chars[j] === close) depth--; else if (chars[j] === chars[i + 1]) depth++; j++; } html += span('hl-adverb', code.slice(i, j)); i = j; continue; }
+                    while (j < len && /\w/.test(chars[j])) j++; if (j > i + 1) { html += span('hl-adverb', code.slice(i, j)); i = j; continue; }
+                    html += escapeHtml(ch); i++; continue;
+                }
+                if (/[A-Z]/.test(ch) && (i === 0 || !/\w/.test(chars[i - 1]))) {
+                    let j = i; while (j < len && /\w/.test(chars[j])) j++; const word = code.slice(i, j);
+                    if (word.length >= 2 && j < len) { const after = code.slice(j).trimStart(); if (/^\$/.test(after) || /^returns\b/.test(after) || /^is\b/.test(after) || /^of\b/.test(after)) { html += span('hl-type', word); i = j; continue; } }
+                }
+                if (/[a-zA-Z_]/.test(ch)) {
+                    let j = i; while (j < len && /\w/.test(chars[j])) j++; const word = code.slice(i, j);
+                    if (RAKU_KEYWORDS.test(word)) { html += span('hl-keyword', word); i = j; continue; }
+                    if (BUILTIN_KEYWORDS.test(word)) { html += span('hl-builtin', word); i = j; continue; }
+                    if (j < len && chars[j] === '{') { html += span('hl-rule-name', word); i = j; continue; }
+                    html += escapeHtml(word); i = j; continue;
+                }
+                if (ch === '{' || ch === '}') { html += span('hl-brace', ch); i++; continue; }
+                if ('+*?'.includes(ch)) { html += span('hl-quantifier', ch); i++; continue; }
+                if ((ch === '|' && i + 1 < len && chars[i + 1] === '|') || ch === '|' || (ch === '&' && i + 1 < len && chars[i + 1] === '&') || ch === '&') { let tok = ch; i++; if (i < len && '|&'.includes(chars[i])) { tok += chars[i]; i++; } html += span('hl-alt', tok); continue; }
+                if (/[0-9]/.test(ch)) {
+                    let j = i; const two = code.slice(i, i + 2);
+                    if (two === '0x' || two === '0X') { j = i + 2; while (j < len && /[0-9a-fA-F_]/.test(chars[j])) j++; }
+                    else if (two === '0b' || two === '0B') { j = i + 2; while (j < len && /[01_]/.test(chars[j])) j++; }
+                    else if (two === '0o' || two === '0O') { j = i + 2; while (j < len && /[0-7_]/.test(chars[j])) j++; }
+                    else { j = i; while (j < len && /[0-9._eE]/.test(chars[j])) { if ((chars[j] === 'e' || chars[j] === 'E') && j + 1 < len && /[+\-]/.test(chars[j + 1])) j++; j++; } }
+                    if (j > i) { html += span('hl-number', code.slice(i, j)); i = j; continue; }
+                }
+                if (/[=+\-*\/%!~<>.?^]/.test(ch)) {
+                    let j = i + 1; while (j < len && /[=+\-*\/%!~<>.?^&|]/.test(chars[j])) j++; const op = code.slice(i, j);
+                    if (/^(=>|~~|!=|==|<=|>=|<|>|\+=|-=|\*=|%=|\.\.|\+|-|\*|\||&|\^|!)/.test(op)) { html += span('hl-operator', op); i = j; continue; }
+                }
+                html += escapeHtml(ch);
+                i++;
+            }
+            return html;
+        }
+
+        const HL_STYLES = document.createElement('style');
+        HL_STYLES.textContent = `
+.hl-comment { color: #6c7086; font-style: italic; }
+.hl-string { color: #a6e3a1; }
+.hl-keyword { color: #cba6f7; font-weight: 600; }
+.hl-rule-name { color: #89b4fa; font-weight: 500; }
+.hl-rx-builtin { color: #f9e2af; }
+.hl-rule-call { color: #89dceb; }
+.hl-brace { color: #f5c2e7; }
+.hl-quantifier { color: #fab387; }
+.hl-alt { color: #f38ba8; }
+.hl-variable { color: #b4befe; }
+.hl-adverb { color: #74c7ec; }
+.hl-charclass { color: #f9e2af; }
+.hl-assertion { color: #89dceb; }
+.hl-type { color: #a6e3a1; }
+.hl-operator { color: #bac2de; }
+.hl-number { color: #fab387; }
+.hl-builtin { color: #f2cdcd; }
+`;
+        document.head.appendChild(HL_STYLES);
 
         function debounce(fn, ms) {
             let timer;
@@ -1054,437 +1177,192 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         }
 
         // ============================================================
-        // WebSocket Client
+        // In-Browser Grammar Evaluation
         // ============================================================
-        let ws = null;
-        let reconnectTimer = null;
-        let reconnectDelay = 1000;
-        const MAX_RECONNECT = 30000;
-        let wsConnected = false;
+        let runtimeReady = false;
+        let perl6Ready = false;
 
-        function connectWS() {
-            const status = document.getElementById('status-bar');
-            status.textContent = 'Connecting...';
-            status.className = '';
+        window._perl6Ready = function() {
+            perl6Ready = true;
+        };
 
-            ws = new WebSocket((location.protocol === 'https:' ? 'wss:' : 'ws:') + '//' + location.host + '/ws');
-
-            ws.onopen = () => {
-                wsConnected = true;
-                reconnectDelay = 1000;
-                status.textContent = 'Connected';
-                status.className = 'connected';
-                sendGrammar();
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    handleResponse(data);
-                } catch (e) {
-                    console.error('WS parse error:', e);
-                }
-            };
-
-            ws.onclose = () => {
-                wsConnected = false;
-                status.textContent = 'Reconnecting...';
-                status.className = 'reconnecting';
-                scheduleReconnect();
-            };
-
-            ws.onerror = () => {
-                if (!wsConnected) {
-                    status.textContent = 'Connection failed';
-                    status.className = 'error';
-                }
-            };
-        }
-
-        function scheduleReconnect() {
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-            reconnectTimer = setTimeout(() => {
-                connectWS();
-                reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT);
-            }, reconnectDelay);
-        }
-
-        function sendMessage(msg) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify(msg));
+        window._grammarResult = function(data) {
+            if (data.error) { showError(data.error); return; }
+            hideError();
+            if (data.match) {
+                renderMatch(data.match);
+                renderTrace(buildTrace(data.match, grammarInput.value));
+            } else {
+                clearMatch();
+                clearTrace();
             }
+            if (data.hasOwnProperty('made')) renderMade(data.made); else clearMade();
+        };
+
+        function getAlternations(code) {
+            var alts = {};
+            var tokenRegex = /token\s+(\w+)\s*\{([^}]*)\}/g;
+            var m;
+            while ((m = tokenRegex.exec(code)) !== null) {
+                if (m[2].indexOf('||') !== -1) {
+                    var branches = m[2].match(/<(\w+)>/g);
+                    if (branches) {
+                        alts[m[1]] = branches.map(function(b) { return b.slice(1, -1); });
+                    }
+                }
+            }
+            return alts;
         }
 
-        // ============================================================
-        // Grammar Evaluation (via WS)
-        // ============================================================
-        let debouncedSend = debounce(sendGrammar, 300);
-        let currentGrammar = '';
-        let currentString = '';
+        function getQuantified(code) {
+            var q = {};
+            var tokenRegex = /token\s+(\w+)\s*\{([^}]*)\}/g;
+            var m;
+            while ((m = tokenRegex.exec(code)) !== null) {
+                var qmatch = m[2].match(/<(\w+)>\+/);
+                if (qmatch) { q[m[1]] = qmatch[1]; }
+            }
+            return q;
+        }
 
-        function sendGrammar() {
+        function buildTrace(matchNode, code) {
+            var alts = getAlternations(code);
+            var quantified = getQuantified(code);
+            var stringLen = stringInput.value.length;
+            function walk(node) {
+                if (!node) return node;
+                var n = { rule: node.rule, data: node.data, pos_start: node.pos_start, pos_end: node.pos_end, match: true };
+                if (node.children) {
+                    var walked = node.children.map(walk);
+                    var ruleAlts = alts[node.rule];
+                    if (ruleAlts) {
+                        n.children = [];
+                        var matched = false;
+                        for (var i = 0; i < ruleAlts.length; i++) {
+                            var alt = ruleAlts[i];
+                            var child = walked.filter(function(c) { return c.rule === alt && c.match; })[0];
+                            if (child && !matched) {
+                                n.children.push(child);
+                                matched = true;
+                            } else if (!child && !matched) {
+                                n.children.push({ rule: alt, data: '', pos_start: node.pos_start, pos_end: node.pos_start, match: false });
+                            }
+                        }
+                    } else {
+                        n.children = walked;
+                    }
+                    // Add trailing fail for quantifiers
+                    var innerRule = quantified[node.rule];
+                    if (innerRule && n.pos_end === stringLen) {
+                        var innerAlts = alts[innerRule] || [innerRule];
+                        var trail = { rule: innerRule, data: '', pos_start: stringLen, pos_end: stringLen, match: false };
+                        trail.children = [];
+                        var innerMatched = false;
+                        for (var i = 0; i < innerAlts.length; i++) {
+                            if (!innerMatched) {
+                                trail.children.push({ rule: innerAlts[i], data: '', pos_start: stringLen, pos_end: stringLen, match: false });
+                            }
+                        }
+                        n.children.push(trail);
+                    }
+                }
+                return n;
+            }
+            return walk(matchNode);
+        }
+
+        let grammarCounter = 0;
+        let actionsCounter = 0;
+
+        function runGrammar() {
+            if (!runtimeReady || !perl6Ready) return;
             const grammar = document.getElementById('grammar-code').value;
             const actions = document.getElementById('actions-code').value;
             const string = document.getElementById('string-input').value;
-            currentGrammar = grammar;
-            currentString = string;
-            var msg = {grammar, string};
-            if (actions) msg.actions = actions;
-            sendMessage(msg);
+            if (!grammar.trim() || !string.trim()) return;
+            const perl6Script = document.querySelector('script[type="text/perl6"]');
+            const engine = perl6Script ? perl6Script.textContent
+                .replace("EVAL :lang<JavaScript>, 'window._perl6Ready()'", '# removed') : '';
+            try {
+                grammarCounter++;
+                const uniqueName = '_G' + grammarCounter;
+                const uniqueGrammar = grammar.replace(/(?:unit\s+)?grammar\s+(\w+)/, 'grammar ' + uniqueName);
+                var uniqueActions = actions.trim();
+                var actionsClassName = '';
+                if (uniqueActions) {
+                    var nameMap = {};
+                    var lastAn = '';
+                    uniqueActions = uniqueActions.replace(/class\s+(\w+)/g, function(m, name) {
+                        actionsCounter++;
+                        var an = '_A' + actionsCounter;
+                        nameMap[name] = an;
+                        lastAn = an;
+                        return 'class ' + an;
+                    });
+                    actionsClassName = lastAn;
+                    for (var oldName in nameMap) {
+                        var re = new RegExp('\\b' + oldName + '\\b', 'g');
+                        uniqueActions = uniqueActions.replace(re, nameMap[oldName]);
+                    }
+                }
+                var code = engine + '\n' + uniqueGrammar.trim();
+                if (uniqueActions) { code += '\n' + uniqueActions; }
+                code += '\n;process-grammar(' +
+                    JSON.stringify(uniqueName) + ', ' +
+                    JSON.stringify(string) + ', ' +
+                    (actionsClassName ? JSON.stringify(actionsClassName) : '""') + ')';
+                Raku.eval(code);
+            } catch (e) {
+                console.error('Raku.eval error:', e);
+            }
         }
 
-        function handleResponse(data) {
-            if (data.error) {
-                showError(data.error);
+        let debouncedEval = debounce(runGrammar, 300);
+
+        function initRaku() {
+            if (typeof window.evalP6 === 'function') {
+                window.Raku = { eval: window.evalP6 };
+                runtimeReady = true;
+                document.getElementById('status-bar').textContent = 'Ready';
+                document.getElementById('status-bar').className = 'connected';
+                const perl6Script = document.querySelector('script[type="text/perl6"]');
+                if (perl6Script) {
+                    try {
+                        Raku.eval(perl6Script.textContent);
+                        runGrammar();
+                    }
+                    catch (e) { showError('Raku init error: ' + e); }
+                }
                 return;
             }
-            hideError();
-            if (data.trace) renderTrace(data.trace);
-            else clearTrace();
-            if (data.match) renderMatch(data.match);
-            else clearMatch();
-            if (data.hasOwnProperty('made')) renderMade(data.made);
-            else clearMade();
+            setTimeout(initRaku, 200);
         }
+        initRaku();
 
-        // ============================================================
-        // File Save / Open
-        // ============================================================
-        function extractGrammarName(code) {
-            const m = code.match(/^\s*(?:token|rule|regex|method)\s+(\w+)/m);
-            if (m) return m[1];
-            const g = code.match(/^\s*grammar\s+(\w+)/m);
-            if (g) return g[1];
-            return null;
-        }
-
-        async function saveFileAs(content, suggestedName, fallbackName) {
-            const blob = new Blob([content], {type: 'text/plain'});
-            if ('showSaveFilePicker' in window) {
-                try {
-                    const handle = await window.showSaveFilePicker({suggestedName});
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    return;
-                } catch (e) {
-                    if (e.name === 'AbortError') return;
-                }
-            }
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = fallbackName || suggestedName;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        function openFileViaInput(inputId) {
-            return new Promise(resolve => {
-                const input = document.getElementById(inputId);
-                input.value = '';
-                const handler = function () {
-                    input.removeEventListener('change', handler);
-                    const file = input.files[0];
-                    if (!file) {resolve(null); return;}
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = () => resolve(null);
-                    reader.readAsText(file);
-                };
-                input.addEventListener('change', handler);
-                input.click();
-            });
-        }
-
-        async function pickAndReadFile(accept, inputId) {
-            if ('showOpenFilePicker' in window) {
-                try {
-                    const [handle] = await window.showOpenFilePicker({
-                        types: [{description: 'Files', accept: {'text/plain': accept}}],
-                        multiple: false
-                    });
-                    const file = await handle.getFile();
-                    return await file.text();
-                } catch (e) {
-                    if (e.name === 'AbortError') return null;
-                }
-            }
-            return openFileViaInput(inputId);
-        }
-
-        async function saveActions() {
-            const code = actionsInput.value;
-            const date = new Date().toISOString().slice(0, 10);
-            const filename = 'actions-' + date + '.rakumod';
-            await saveFileAs(code, filename, filename);
-        }
-
-        async function openActions() {
-            const content = await pickAndReadFile(['.rakumod', '.raku'], 'grammar-file-input');
-            if (content == null) return;
-            actionsInput.value = content;
-            updateHighlight();
-            sendGrammar();
-        }
-
-        async function saveGrammar() {
-            const code = grammarInput.value;
-            const date = new Date().toISOString().slice(0, 10);
-            const filename = 'grammar-' + date + '.rakumod';
-            await saveFileAs(code, filename, filename);
-        }
-
-        async function saveString() {
-            const code = stringInput.value;
-            await saveFileAs(code, 'input.txt');
-        }
-
-        async function openGrammar() {
-            const content = await pickAndReadFile(['.rakumod', '.raku', '.grammar'], 'grammar-file-input');
-            if (content == null) return;
-            grammarInput.value = content;
-            updateHighlight();
-            sendGrammar();
-        }
-
-        async function openString() {
-            const content = await pickAndReadFile(['.txt'], 'string-file-input');
-            if (content == null) return;
-            stringInput.value = content;
-            sendGrammar();
-        }
-
-        // ============================================================
-        // URL Sharing
-        // ============================================================
-        function fallbackCopy(text) {
-            const ta = document.createElement('textarea');
-            ta.value = text;
-            ta.style.position = 'fixed';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            ta.remove();
-        }
-
-        function showCopied() {
-            const btn = document.getElementById('btn-share');
-            btn.textContent = '🔗 Copied!';
-            btn.classList.add('copied');
-            setTimeout(() => {
-                btn.textContent = '🔗 Share';
-                btn.classList.remove('copied');
-            }, 2000);
-        }
-
-        function capturePaneState() {
-            const vis = {};
-            document.querySelectorAll('.panel-toggle input').forEach(function (cb) {
-                var toggle = cb.closest('.panel-toggle');
-                vis[toggle.dataset.panel] = cb.checked;
-            });
-
-            function getFlex(el) {
-                if (!el || el.classList.contains('collapsed') || getComputedStyle(el).display === 'none') return null;
-                var flex = el.style.flex;
-                if (flex) return parseFloat(flex);
-                return null;
-            }
-
-            var sizes = {};
-            var lh = document.getElementById('left-half');
-            var rh = document.getElementById('right-half');
-            var lf = getFlex(lh);
-            var rf = getFlex(rh);
-            if (lf != null && rf != null) sizes.leftRight = lf / (lf + rf);
-
-            var lp = {};
-            var gp = document.getElementById('grammar-panel');
-            var ap = document.getElementById('actions-panel');
-            var sp = document.getElementById('string-panel');
-            var gpf = getFlex(gp);
-            var apf = getFlex(ap);
-            var spf = getFlex(sp);
-            var total = 0;
-            if (gpf != null) { lp.grammar = gpf; total += gpf; }
-            if (apf != null) { lp.actions = apf; total += apf; }
-            if (spf != null) { lp.string = spf; total += spf; }
-            if (total > 0 && Object.keys(lp).length > 1) {
-                for (var k in lp) lp[k] /= total;
-            }
-            if (Object.keys(lp).length > 0) sizes.leftPanels = lp;
-
-            var rp = {};
-            var tp = document.getElementById('trace-panel');
-            var mp = document.getElementById('match-panel');
-            var tpf = getFlex(tp);
-            var mpf = getFlex(mp);
-            var rtotal = 0;
-            if (tpf != null) { rp.trace = tpf; rtotal += tpf; }
-            if (mpf != null) { rp.match = mpf; rtotal += mpf; }
-            if (rtotal > 0 && Object.keys(rp).length > 1) {
-                for (var k in rp) rp[k] /= rtotal;
-            }
-            if (Object.keys(rp).length > 0) sizes.rightPanels = rp;
-
-            var made = document.getElementById('made-panel');
-            var madef = getFlex(made);
-            if (madef != null) sizes.made = madef;
-
-            return { panelVisibility: vis, panelSizes: sizes };
-        }
-
-        function sortJsonKeys(key, val) {
-            if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-                return Object.keys(val).sort().reduce(function (acc, k) { acc[k] = val[k]; return acc; }, {});
-            }
-            return val;
-        }
-
-        async function copyShareUrl() {
-            var grammar = grammarInput.value;
-            var string = stringInput.value;
-            var actions = actionsInput.value;
-            var state = JSON.stringify(capturePaneState(), sortJsonKeys);
-            var url;
-
-            try {
-                var resp = await fetch('/_store', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ grammar_code: grammar, string_input: string, actions_code: actions, state: state })
-                });
-                if (!resp.ok) throw new Error('POST failed: ' + resp.status);
-                var data = await resp.json();
-                url = window.location.origin + '/' + data.id;
-                console.log('share: created snapshot', data.id);
-            } catch (e) {
-                console.error('share: POST failed', e);
-                url = window.location.href;
-            }
-
-            // On HTTPS use clipboard API (works without user gesture).
-            // On HTTP use prompt() — user gesture is lost after await.
-            if (window.isSecureContext && navigator.clipboard) {
-                await navigator.clipboard.writeText(url).catch(function () {
-                    prompt('Copy this share URL:', url);
-                });
-            } else {
-                prompt('Copy this share URL:', url);
-            }
-            showCopied();
-        }
-
-        async function loadFromPath() {
-            var match = window.location.pathname.match(/^\/([0-9a-f]{40})$/i);
-            if (!match) { console.warn('loadFromPath: no SHA1 match in path', window.location.pathname); return false; }
-            var id = match[1].toLowerCase();
-            console.log('loadFromPath: loading snapshot', id);
-            try {
-                var resp = await fetch('/_store/' + id);
-                if (!resp.ok) { console.error('loadFromPath: fetch failed', resp.status, resp.statusText); return false; }
-                var data = await resp.json();
-                console.log('loadFromPath: loaded snapshot', id);
-                grammarInput.value = data.grammar_code || '';
-                stringInput.value = data.string_input || '';
-                actionsInput.value = data.actions_code || '';
-                if (data.state) {
-                    restorePaneState(JSON.parse(data.state));
-                } else {
-                    if (data.actions_code) {
-                        document.getElementById('actions-panel').classList.remove('collapsed');
-                        document.getElementById('made-panel').classList.remove('collapsed');
-                        var at = document.querySelector('.panel-toggle[data-panel="actions"] input');
-                        var mt = document.querySelector('.panel-toggle[data-panel="made"] input');
-                        if (at) at.checked = true;
-                        if (mt) mt.checked = true;
-                        updateRightHalf();
-                    }
-                }
-                updateHighlight();
-                setTimeout(sendGrammar, 500);
-                return true;
-            } catch (e) {
-                console.error('loadFromPath: exception', e);
-                return false;
-            }
-        }
-
-        function restorePaneState(state) {
-            if (state.panelVisibility) {
-                Object.keys(state.panelVisibility).forEach(function (panel) {
-                    var visible = state.panelVisibility[panel];
-                    var panelEl = document.getElementById(panel + '-panel');
-                    if (panelEl) {
-                        panelEl.classList.toggle('collapsed', !visible);
-                    }
-                    var toggle = document.querySelector('.panel-toggle[data-panel="' + panel + '"] input');
-                    if (toggle) toggle.checked = visible;
-                });
-            }
-
-            if (state.panelSizes) {
-                var s = state.panelSizes;
-                if (s.leftRight != null) {
-                    var lh = document.getElementById('left-half');
-                    var rh = document.getElementById('right-half');
-                    if (lh) lh.style.flex = s.leftRight.toFixed(4);
-                    if (rh) rh.style.flex = (1 - s.leftRight).toFixed(4);
-                }
-                if (s.leftPanels) {
-                    var gp = document.getElementById('grammar-panel');
-                    var ap = document.getElementById('actions-panel');
-                    var sp = document.getElementById('string-panel');
-                    if (s.leftPanels.grammar != null && gp) gp.style.flex = s.leftPanels.grammar.toFixed(4);
-                    if (s.leftPanels.actions != null && ap) ap.style.flex = s.leftPanels.actions.toFixed(4);
-                    if (s.leftPanels.string != null && sp) sp.style.flex = s.leftPanels.string.toFixed(4);
-                }
-                if (s.rightPanels) {
-                    var tp = document.getElementById('trace-panel');
-                    var mp = document.getElementById('match-panel');
-                    if (s.rightPanels.trace != null && tp) tp.style.flex = s.rightPanels.trace.toFixed(4);
-                    if (s.rightPanels.match != null && mp) mp.style.flex = s.rightPanels.match.toFixed(4);
-                }
-                if (s.made != null) {
-                    var made = document.getElementById('made-panel');
-                    if (made) made.style.flex = s.made.toFixed(4);
-                }
-            }
-
-            updateRightHalf();
-            setupResizeHandles();
-        }
-
-        // ============================================================
-        // Event Setup
-        // ============================================================
         const grammarInput = document.getElementById('grammar-code');
         const actionsInput = document.getElementById('actions-code');
         const stringInput = document.getElementById('string-input');
         const highlightOutput = document.getElementById('highlight-output');
         const actionsHighlightOutput = document.getElementById('actions-highlight-output');
 
-        async function updateHighlight() {
-            const hr = await getHighlightRaku();
+        function updateHighlight() {
             const code = grammarInput.value;
-            highlightOutput.innerHTML = await hr(code);
+            highlightOutput.innerHTML = highlightRaku(code);
             const actionsCode = actionsInput.value;
-            actionsHighlightOutput.innerHTML = await hr(actionsCode);
+            actionsHighlightOutput.innerHTML = highlightRaku(actionsCode);
         }
 
         grammarInput.addEventListener('input', () => {
             updateHighlight();
-            debouncedSend();
+            debouncedEval();
         });
 
         actionsInput.addEventListener('input', () => {
             updateHighlight();
-            debouncedSend();
+            debouncedEval();
         });
 
-        stringInput.addEventListener('input', debouncedSend);
+        stringInput.addEventListener('input', debouncedEval);
 
         grammarInput.addEventListener('scroll', () => {
             const pre = document.getElementById('grammar-highlight');
@@ -1510,16 +1388,16 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             }
             if ((e.key === 'Enter' && e.ctrlKey) || (e.key === 'Enter' && e.metaKey)) {
                 e.preventDefault();
-                sendGrammar();
+                runGrammar();
             }
         }
 
         grammarInput.addEventListener('keydown', (e) => {
-            handleTabKey(e, grammarInput, () => { updateHighlight(); debouncedSend(); });
+            handleTabKey(e, grammarInput, () => { updateHighlight(); debouncedEval(); });
         });
 
         actionsInput.addEventListener('keydown', (e) => {
-            handleTabKey(e, actionsInput, () => { updateHighlight(); debouncedSend(); });
+            handleTabKey(e, actionsInput, () => { updateHighlight(); debouncedEval(); });
         });
 
         // Panel toggles
@@ -1665,6 +1543,102 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             }
         }
 
+        // ============================================================
+        // File Save / Open
+        // ============================================================
+        async function saveFileAs(content, suggestedName, fallbackName) {
+            const blob = new Blob([content], {type: 'text/plain'});
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({suggestedName});
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return;
+                } catch (e) {
+                    if (e.name === 'AbortError') return;
+                }
+            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fallbackName || suggestedName;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function openFileViaInput(inputId) {
+            return new Promise(resolve => {
+                const input = document.getElementById(inputId);
+                input.value = '';
+                const handler = function () {
+                    input.removeEventListener('change', handler);
+                    const file = input.files[0];
+                    if (!file) {resolve(null); return;}
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = () => resolve(null);
+                    reader.readAsText(file);
+                };
+                input.addEventListener('change', handler);
+                input.click();
+            });
+        }
+
+        async function pickAndReadFile(accept, inputId) {
+            if ('showOpenFilePicker' in window) {
+                try {
+                    const [handle] = await window.showOpenFilePicker({
+                        types: [{description: 'Files', accept: {'text/plain': accept}}],
+                        multiple: false
+                    });
+                    const file = await handle.getFile();
+                    return await file.text();
+                } catch (e) {
+                    if (e.name === 'AbortError') return null;
+                }
+            }
+            return openFileViaInput(inputId);
+        }
+
+        async function saveActions() {
+            const code = actionsInput.value;
+            await saveFileAs(code, 'actions-' + new Date().toISOString().slice(0,10) + '.rakumod');
+        }
+
+        async function saveGrammar() {
+            const code = grammarInput.value;
+            await saveFileAs(code, 'grammar-' + new Date().toISOString().slice(0,10) + '.rakumod');
+        }
+
+        async function saveString() {
+            const code = stringInput.value;
+            await saveFileAs(code, 'input.txt');
+        }
+
+        async function openGrammar() {
+            const content = await pickAndReadFile(['.rakumod', '.raku', '.grammar'], 'grammar-file-input');
+            if (content == null) return;
+            grammarInput.value = content;
+            updateHighlight();
+            debouncedEval();
+        }
+
+        async function openActions() {
+            const content = await pickAndReadFile(['.rakumod', '.raku'], 'grammar-file-input');
+            if (content == null) return;
+            actionsInput.value = content;
+            updateHighlight();
+            debouncedEval();
+        }
+
+        async function openString() {
+            const content = await pickAndReadFile(['.txt'], 'string-file-input');
+            if (content == null) return;
+            stringInput.value = content;
+            debouncedEval();
+        }
+
         // Save/Open button handlers
         document.querySelectorAll('[data-action="save-grammar"]').forEach(b => b.addEventListener('click', saveGrammar));
         document.querySelectorAll('[data-action="save-actions"]').forEach(b => b.addEventListener('click', saveActions));
@@ -1674,31 +1648,56 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         document.querySelectorAll('[data-action="open-string"]').forEach(b => b.addEventListener('click', openString));
 
         // Share button handler
-        document.getElementById('btn-share').addEventListener('click', copyShareUrl);
-
-        // Initial load — check for SHA1 path segment first
-        var pathMatch = window.location.pathname.match(/^\/([0-9a-f]{40})$/);
-        if (pathMatch) {
-            loadFromPath().then(function (ok) {
-                if (!ok) {
-                    grammarInput.value = GRAMMAR_DEFAULT;
-                    stringInput.value = STRING_DEFAULT;
-                    updateHighlight();
-                    setTimeout(sendGrammar, 500);
-                }
-            });
-        } else {
-            grammarInput.value = GRAMMAR_DEFAULT;
-            stringInput.value = STRING_DEFAULT;
-            updateHighlight();
+        function encodeState() {
+            const g = grammarInput.value;
+            const a = actionsInput.value;
+            const s = stringInput.value;
+            return btoa(encodeURIComponent(JSON.stringify({g, a, s})));
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            connectWS();
-            setupResizeHandles();
-            // Initial send after a small delay for WS to connect
-            setTimeout(sendGrammar, 500);
-        });
+        function decodeState(hash) {
+            try { return JSON.parse(decodeURIComponent(atob(hash))); }
+            catch { return null; }
+        }
+
+        async function copyShareUrl() {
+            const url = window.location.origin + window.location.pathname + '#' + encodeState();
+            if (window.isSecureContext && navigator.clipboard) {
+                await navigator.clipboard.writeText(url).catch(function () {
+                    prompt('Copy this share URL:', url);
+                });
+            } else {
+                prompt('Copy this share URL:', url);
+            }
+            showCopied();
+        }
+
+        function showCopied() {
+            const btn = document.getElementById('btn-share');
+            btn.textContent = '🔗 Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = '🔗 Share';
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+
+        document.getElementById('btn-share').addEventListener('click', copyShareUrl);
+
+        // Initial load
+        grammarInput.value = GRAMMAR_DEFAULT;
+        stringInput.value = STRING_DEFAULT;
+        updateHighlight();
+        // Try to restore from hash fragment
+        if (window.location.hash) {
+            const state = decodeState(window.location.hash.slice(1));
+            if (state) {
+                if (state.g) grammarInput.value = state.g;
+                if (state.a) { actionsInput.value = state.a; document.getElementById('actions-panel').classList.remove('collapsed'); }
+                if (state.s) stringInput.value = state.s;
+                updateHighlight();
+            }
+        }
     </script>
 </body>
 

@@ -1,35 +1,35 @@
 # Grammar-Editor
 
-Web-based grammar editor with a JS frontend and a Raku backend.
+Browser-only Raku grammar editor. No backend needed — runs Raku grammars entirely in the browser via MemoizedDOM's `perl6.js` compiled Raku runtime.
 
 ## Architecture
 
-- **Frontend**: `index.html` — single-file HTML/CSS/JS app. Connects to backend via WebSocket.
-- **Backend**: `server.raku` — Raku/Cro WebSocket server. Receives grammar code + input string, returns grammar trace + match results via JSON.
+- **Frontend**: `index.html` — single-file HTML/CSS/JS app.
 - **Highlighting**: Uses [Shiki](https://shiki.style) with its built-in Raku TextMate grammar (`@shikijs/langs/raku`). Highlighted via `js/highlight.js` which imports Shiki from CDN (esm.sh) or node_modules in tests.
+- **Raku runtime**: `perl6.js` (74MB) + `webperl.js` — compiled Raku runtime that runs in the browser. Loads on page init, executes grammar compilation and matching in-browser.
+- **Grammar engine**: Ported from `lib/GrammarEngine.rakumod` to a `<script type="text/perl6">` block in `index.html`. Compiled and run by `webperl.js` on page load.
 
-## Setup + commands
+## Run
 
-### Prerequisites
+Open `index.html` directly in any modern browser:
 
-- [Rakudo](https://raku.org) (Raku compiler)
-- [Cro](https://cro.services) — WebSocket HTTP server
-  ```bash
-  zef install Cro::HTTP Cro::WebSocket JSON::Fast
-  ```
+```bash
+open index.html
+```
 
-### Run
+For local testing with a simple HTTP server (better for loading `perl6.js`):
 
-1. **Start the server**:
-   ```bash
-   raku server.raku
-   ```
-2. **Open in browser**:
-   ```bash
-   open http://localhost:3001
-   ```
+```bash
+python3 -m http.server 8000
+# or
+npx serve .
+```
 
-### Usage
+Then open http://localhost:8000.
+
+The 74MB `perl6.js` runtime takes a few seconds to load on first visit.
+
+## Usage
 
 - Edit grammar code in the top-left panel (Raku syntax highlighted live)
 - Edit the input string in the top-right panel
@@ -38,22 +38,18 @@ Web-based grammar editor with a JS frontend and a Raku backend.
 - Ctrl+Enter (or Cmd+Enter) to force re-parse
 - Errors appear in a bar at the bottom
 
-### Tests
+## Tests
 
-1. **Run Raku backend tests**:
-   ```bash
-   raku -I. t/server.t
-   ```
-2. **Run JS frontend tests**:
-   ```bash
-   npm test
-   ```
+```bash
+npm test
+```
 
 ## Convention
 
 - Frontend: vanilla HTML/CSS/JS in `index.html`
-- Backend: Raku in `server.raku`
-- Core logic extracted to `lib/GrammarEngine.rakumod` and `js/editor.js` for testing
+- Grammar engine: `<script type="text/perl6">` block inside `index.html`
+- Core logic extracted to `js/editor.js`, `js/highlight.js` for testing
+- Raku runtime assets: `perl6.js`, `webperl.js` (from [MemoizedDOM](https://github.com/FCO/MemoizedDOM))
 - Tests in `t/` directory
 - Changes tracked in `openspec/changes/<name>/`
 

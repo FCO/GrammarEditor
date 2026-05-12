@@ -79,6 +79,8 @@ const PARTIAL_MATCH_RESPONSE = {
   match: null
 };
 
+const NO_MADE_RESPONSE = (({ made, ...rest }) => rest)(TRACE_RESPONSE);
+
 function grammarResponse(grammar, string, actions) {
   if (grammar.includes('syntax error') || grammar.trim() === '') {
     return {
@@ -96,6 +98,14 @@ function grammarResponse(grammar, string, actions) {
       error_col: 1
     };
   }
+  if (grammar.includes('runtime error')) {
+    return {
+      error: 'Infinite loop detected',
+      error_source: 'runtime',
+      error_line: 0,
+      error_col: 0
+    };
+  }
   if (string === '123abc') {
     return PARTIAL_MATCH_RESPONSE;
   }
@@ -109,6 +119,21 @@ function grammarResponse(grammar, string, actions) {
       },
       match: null
     };
+  }
+  if (grammar.includes('no match')) {
+    const len = string.length;
+    return {
+      trace: {
+        rule: "TOP", match: false, pos_start: 0, pos_end: len,
+        children: [
+          { rule: "fail", match: false, pos_start: 0, pos_end: 0, children: [] }
+        ]
+      },
+      match: null
+    };
+  }
+  if (grammar.includes('no made')) {
+    return NO_MADE_RESPONSE;
   }
   if (actions && actions.includes('class')) {
     const madeMatch = actions.match(/make\((.+?)\)/);

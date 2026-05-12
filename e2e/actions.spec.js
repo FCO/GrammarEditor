@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitForResponse, setupPage } from './fixtures.js';
+import { setGrammar, waitForResponse, setupPage } from './fixtures.js';
 
 test.describe('Actions Editor', () => {
   test.beforeEach(async ({ page }) => {
@@ -22,5 +22,13 @@ test.describe('Actions Editor', () => {
     await page.locator('.panel-toggle[data-panel="made"]').click();
     const madeBody = page.locator('#made-body');
     await expect(madeBody).not.toBeEmpty();
+  });
+
+  test('made panel empty when no made value returned', async ({ page }) => {
+    await setGrammar(page, `no made`);
+    await waitForResponse(page);
+    await page.locator('.panel-toggle[data-panel="made"]').click();
+    const madeBody = page.locator('#made-body');
+    await expect(madeBody).toBeEmpty();
   });
 });

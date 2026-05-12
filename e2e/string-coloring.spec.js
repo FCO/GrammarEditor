@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { setString, waitForResponse, setupPage } from './fixtures.js';
+import { setString, setGrammar, waitForResponse, setupPage } from './fixtures.js';
 
 test.describe('String Coloring', () => {
   test.beforeEach(async ({ page }) => {
@@ -42,5 +42,28 @@ test.describe('String Coloring', () => {
     const unmatchedCount = await output.locator('span.unmatched-char').count();
     expect(unmatchedCount).toBeGreaterThan(0);
     expect(unmatchedCount).toBeLessThan(totalSpans);
+  });
+
+  test('full match shows no unmatched-char', async ({ page }) => {
+    await waitForResponse(page);
+    const output = page.locator('#string-colored-output');
+    await expect(output.locator('span.unmatched-char')).toHaveCount(0);
+    await expect(output.textContent()).resolves.toBe('hello');
+  });
+
+  test('no match shows all as unmatched-char', async ({ page }) => {
+    await setGrammar(page, `no match`);
+    await waitForResponse(page);
+    const output = page.locator('#string-colored-output');
+    const unmatched = output.locator('span.unmatched-char');
+    const count = await unmatched.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('empty input shows no coloring', async ({ page }) => {
+    await setString(page, '');
+    await waitForResponse(page);
+    const output = page.locator('#string-colored-output');
+    await expect(output).toBeEmpty();
   });
 });

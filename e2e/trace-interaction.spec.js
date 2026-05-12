@@ -47,4 +47,14 @@ test.describe('Trace Tree Interaction', () => {
     await expect(page.locator('.tree-node').first()).toBeVisible();
     await expect(page.locator('.match-node').first()).toBeVisible();
   });
+
+  test('leaving hover clears all highlights', async ({ page }) => {
+    const firstNode = page.locator('.tree-node').first();
+    await firstNode.hover();
+    const highlights = page.locator('#string-highlights .string-highlight');
+    await expect(highlights.first()).toBeAttached();
+    const traceBody = page.locator('#trace-body');
+    await traceBody.hover({ position: { x: 0, y: 0 } });
+    await expect(highlights.first()).not.toBeAttached();
+  });
 });

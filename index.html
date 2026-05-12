@@ -133,6 +133,17 @@
             color: #cdd6f4;
         }
 
+        .panel-header-btn.disabled {
+            opacity: 0.35;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .panel-header-btn.disabled:hover {
+            background: none;
+            color: #a6adc8;
+        }
+
         .toolbar-spacer {
             flex: 1;
         }
@@ -756,7 +767,13 @@
                 </div>
 
                 <div class="panel collapsed" id="made-panel">
-                    <div class="panel-header">Made</div>
+                    <div class="panel-header">
+                        <span>Made</span>
+                        <div class="panel-header-btns">
+                            <button class="panel-header-btn disabled" data-action="save-made"
+                                title="Save as .txt">💾</button>
+                        </div>
+                    </div>
                     <div class="panel-body" id="made-body"></div>
                 </div>
                 <div class="panel collapsed" id="error-panel">
@@ -1365,10 +1382,15 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             pre.style.color = '#a6e3a1';
             pre.textContent = made;
             body.appendChild(pre);
+            var btn = document.querySelector('[data-action="save-made"]');
+            if (btn) btn.classList.remove('disabled');
         }
 
         function clearMade() {
-            document.getElementById('made-body').innerHTML = '';
+            var body = document.getElementById('made-body');
+            if (body) body.innerHTML = '';
+            var btn = document.querySelector('[data-action="save-made"]');
+            if (btn) btn.classList.add('disabled');
         }
 
         // ============================================================
@@ -1686,6 +1708,12 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             return openFileViaInput(inputId);
         }
 
+        async function saveMade() {
+            const pre = document.querySelector('#made-body pre');
+            if (!pre || !pre.textContent) return;
+            await saveFileAs(pre.textContent, 'made-output.txt');
+        }
+
         async function saveActions() {
             const code = actionsInput.value;
             const date = new Date().toISOString().slice(0, 10);
@@ -1936,9 +1964,12 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                     if (made) made.style.flex = s.made.toFixed(4);
                 }
 
-                if (s.error != null && errorPanel) {
-                    if (s.error === 0) errorPanel.classList.add('collapsed');
-                    else errorPanel.classList.remove('collapsed');
+                if (s.error != null) {
+                    var errorPanel = document.getElementById('error-panel');
+                    if (errorPanel) {
+                        if (s.error === 0) errorPanel.classList.add('collapsed');
+                        else errorPanel.classList.remove('collapsed');
+                    }
                 }
             }
 
@@ -2259,6 +2290,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         document.querySelectorAll('[data-action="save-grammar"]').forEach(b => b.addEventListener('click', saveGrammar));
         document.querySelectorAll('[data-action="save-actions"]').forEach(b => b.addEventListener('click', saveActions));
         document.querySelectorAll('[data-action="save-string"]').forEach(b => b.addEventListener('click', saveString));
+        document.querySelectorAll('[data-action="save-made"]').forEach(b => b.addEventListener('click', saveMade));
         document.querySelectorAll('[data-action="open-grammar"]').forEach(b => b.addEventListener('click', openGrammar));
         document.querySelectorAll('[data-action="open-actions"]').forEach(b => b.addEventListener('click', openActions));
         document.querySelectorAll('[data-action="open-string"]').forEach(b => b.addEventListener('click', openString));

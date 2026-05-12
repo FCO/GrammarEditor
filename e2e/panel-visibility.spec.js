@@ -74,4 +74,29 @@ test.describe('Panel Visibility and View Modes', () => {
     await grammarToggle.click();
     await expect(grammarPanel).not.toHaveClass(/collapsed/);
   });
+
+  test('restorePaneState handles error panel in saved state', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#status-bar.connected', { timeout: 5000 });
+    const result = await page.evaluate(() => {
+      const errs = [];
+      const orig = typeof console.error !== 'undefined' ? console.error : null;
+      if (orig) console.error = msg => errs.push(msg);
+      try {
+        restorePaneState({
+          panelSizes: { error: 0 }
+        });
+        restorePaneState({
+          panelSizes: { error: 1 }
+        });
+        return { ok: true, errorCount: errs.length };
+      } catch (e) {
+        return { ok: false, error: e.message };
+      } finally {
+        if (orig) console.error = orig;
+      }
+    });
+    expect(result.ok).toBe(true);
+    expect(result.errorCount).toBe(0);
+  });
 });

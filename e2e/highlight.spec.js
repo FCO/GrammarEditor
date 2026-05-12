@@ -18,15 +18,16 @@ test.describe('Grammar Syntax Highlighting', () => {
 
   test('highlight updates on grammar input', async ({ page }) => {
     const output = page.locator('#highlight-output');
-    const originalText = await output.innerText();
+    await page.waitForFunction(() => {
+      const el = document.getElementById('highlight-output');
+      return el && el.innerText.includes('MyGrammar');
+    }, { timeout: 5000 });
     const ta = page.locator('#grammar-code');
     await ta.fill('grammar Foo { token TOP { <digit> } }');
-    await page.waitForFunction((old) => {
+    await page.waitForFunction(() => {
       const el = document.getElementById('highlight-output');
-      return el && el.innerText !== old;
-    }, originalText, { timeout: 5000 });
-    const newText = await output.innerText();
-    expect(newText).toContain('Foo');
+      return el && el.innerText.includes('Foo');
+    }, { timeout: 5000 });
   });
 
   test('empty grammar shows empty highlight', async ({ page }) => {

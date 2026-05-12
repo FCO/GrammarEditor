@@ -354,11 +354,6 @@ export function renderStringColored(match) {
     }
     collect(match, 0);
 
-    if (matched.length === 0) {
-        output.innerHTML = escapeHtml(text);
-        return;
-    }
-
     const posRule = new Array(text.length);
     for (let i = 0; i < text.length; i++) {
         let bestDepth = -1;

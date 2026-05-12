@@ -443,15 +443,15 @@ describe('renderStringColored unmatched highlighting', () => {
     expect(output.textContent).toBe('hello');
   });
 
-  test('no matched nodes returns raw text', () => {
+  test('no matched nodes renders all as unmatched-char', () => {
     document.getElementById('string-input').value = 'abc';
     const trace = {
       rule: 'TOP', pos_start: 0, pos_end: 3, match: false
     };
     renderStringColored(trace);
     const output = document.getElementById('string-colored-output');
-    expect(output.innerHTML).toBe('abc');
-    expect(output.innerHTML).not.toContain('span');
+    expect(output.innerHTML).toContain('unmatched-char');
+    expect(output.textContent).toBe('abc');
   });
 
   test('empty input renders empty', () => {

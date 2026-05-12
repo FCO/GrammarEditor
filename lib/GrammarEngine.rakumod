@@ -2,18 +2,49 @@ use JSON::Fast;
 
 unit module GrammarEngine;
 
-sub process-grammar(Str $code, Str $string, Str $actions?) returns Hash is export {
-    CATCH {
-        default {
-            return %( error => .Str )
+sub extract-error($ex, Str $source) returns Hash {
+    my $msg = $ex.Str;
+    my $line = 0;
+    my $col = 0;
+
+    if $ex.can('line') {
+        $line = $ex.line // 0;
+    }
+    if $ex.can('column') {
+        $col = $ex.column // 0;
+    }
+
+    if $line == 0 && $col == 0 {
+        if $msg ~~ /'at ' .+ ':' (\d+) [ '.' (\d+) ]? / {
+            $line = +$0;
+            $col = +$1 // 0;
         }
     }
 
-    my $grammar = $code.EVAL;
+    return %( error => $msg, error_line => $line, error_col => $col, error_source => $source );
+}
+
+sub process-grammar(Str $code, Str $string, Str $actions?) returns Hash is export {
+    my $grammar;
+    try {
+        $grammar = $code.EVAL;
+        CATCH {
+            default {
+                return extract-error($_, 'grammar');
+            }
+        }
+    }
 
     my $actions-obj;
     if $actions.defined && $actions.trim {
-        $actions-obj = $actions.EVAL.new;
+        try {
+            $actions-obj = $actions.EVAL.new;
+            CATCH {
+                default {
+                    return extract-error($_, 'actions');
+                }
+            }
+        }
     }
 
     my @methods = $grammar.^methods.grep({ .WHAT ~~ Regex });
@@ -43,19 +74,26 @@ sub process-grammar(Str $code, Str $string, Str $actions?) returns Hash is expor
     }
 
     my %result;
-    with $string {
-        my @*CHILDREN := my @children;
-        my $match = $actions-obj.defined
-            ?? $grammar.parse($string, :actions($actions-obj))
-            !! $grammar.parse($string);
-        with @children.head -> %tree {
-            %tree<match> = False unless $match;
-            %result<trace> = %tree;
+    try {
+        with $string {
+            my @*CHILDREN := my @children;
+            my $match = $actions-obj.defined
+                ?? $grammar.parse($string, :actions($actions-obj))
+                !! $grammar.parse($string);
+            with @children.head -> %tree {
+                %tree<match> = False unless $match;
+                %result<trace> = %tree;
+            }
+            if $match {
+                %result<match> = serialize-match($match);
+                my $made = $match.made;
+                %result<made> = $made.raku if $made.defined;
+            }
         }
-        if $match {
-            %result<match> = serialize-match($match);
-            my $made = $match.made;
-            %result<made> = $made.raku if $made.defined;
+        CATCH {
+            default {
+                return extract-error($_, 'runtime');
+            }
         }
     }
 

@@ -331,6 +331,17 @@
             z-index: 3;
         }
 
+        .error-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            pointer-events: none;
+            z-index: 4;
+            overflow: visible;
+        }
+
         .tree-node {
             padding: 2px 0 2px 16px;
             cursor: default;
@@ -427,24 +438,46 @@
             flex-shrink: 0;
         }
 
-        #error-bar {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
+        #error-panel {
+            flex: 0 0 auto;
+            border-top: 1px solid rgba(243, 139, 168, 0.25);
+        }
+
+        #error-panel .panel-header {
+            background: rgba(243, 139, 168, 0.08);
+            color: #f38ba8;
+            border-bottom: 1px solid rgba(243, 139, 168, 0.2);
+        }
+
+        #error-body {
             padding: 8px 12px;
-            background: rgba(243, 139, 168, 0.12);
-            border-top: 1px solid rgba(243, 139, 168, 0.3);
             color: #f38ba8;
             font-size: 13px;
             line-height: 1.4;
-            max-height: 80px;
+            max-height: 100px;
             overflow-y: auto;
-            z-index: 50;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
 
-        #error-bar.visible {
+        #error-tooltip {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            background: rgba(30, 30, 46, 0.95);
+            border: 1px solid rgba(243, 139, 168, 0.4);
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: #f38ba8;
+            font-size: 12px;
+            line-height: 1.4;
+            max-width: 400px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            pointer-events: none;
+        }
+
+        #error-tooltip.visible {
             display: block;
         }
 
@@ -634,6 +667,11 @@
                 <span class="toggle-icon">👁</span>
                 <span>Made</span>
             </label>
+            <label class="panel-toggle" data-panel="error">
+                <input type="checkbox">
+                <span class="toggle-icon">👁</span>
+                <span>Error</span>
+            </label>
             <button class="toolbar-btn" id="btn-dsl" title="DSL: show Input + Made only">DSL</button>
             <button class="toolbar-btn" id="btn-pro" title="PRO: show all panels">PRO</button>
             <select id="theme-select" class="toolbar-btn" title="Select color theme"></select>
@@ -656,6 +694,7 @@
                         <div class="editor-container">
                             <textarea id="grammar-code" spellcheck="false" autofocus></textarea>
                             <pre id="grammar-highlight"><code id="highlight-output"></code></pre>
+                            <svg class="error-overlay" id="grammar-error-overlay"></svg>
                         </div>
                     </div>
                 </div>
@@ -674,6 +713,7 @@
                         <div class="editor-container">
                             <textarea id="actions-code" spellcheck="false" placeholder="class MyActions { ... }"></textarea>
                             <pre id="actions-highlight"><code id="actions-highlight-output"></code></pre>
+                            <svg class="error-overlay" id="actions-error-overlay"></svg>
                         </div>
                     </div>
                 </div>
@@ -692,6 +732,7 @@
                             <textarea id="string-input" spellcheck="false"></textarea>
                             <pre id="string-colored"><code id="string-colored-output"></code></pre>
                             <div id="string-highlights"></div>
+                            <svg class="error-overlay" id="string-error-overlay"></svg>
                         </div>
                     </div>
                 </div>
@@ -713,15 +754,19 @@
                     <div class="panel-header">Made</div>
                     <div class="panel-body" id="made-body"></div>
                 </div>
+                <div class="panel collapsed" id="error-panel">
+                    <div class="panel-header">Error</div>
+                    <div class="panel-body" id="error-body"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <input type="file" id="grammar-file-input" accept=".rakumod,.raku,.grammar" style="display:none">
     <input type="file" id="string-file-input" accept=".txt" style="display:none">
+    <div id="error-tooltip"></div>
 
     <div id="status-bar">Disconnected</div>
-    <div id="error-bar"></div>
 
     <script>
         const GRAMMAR_DEFAULT = `unit grammar MyGrammar;
@@ -1303,20 +1348,154 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         }
 
         // ============================================================
+        // Error Markers (Zigzag)
+        // ============================================================
+        let currentErrorSource = null;
+        let currentErrorMsg = '';
+
+        function getEditorId(source) {
+            if (source === 'grammar') return 'grammar-code';
+            if (source === 'actions') return 'actions-code';
+            if (source === 'string') return 'string-input';
+            return null;
+        }
+
+        function getOverlayId(source) {
+            if (source === 'grammar') return 'grammar-error-overlay';
+            if (source === 'actions') return 'actions-error-overlay';
+            if (source === 'string') return 'string-error-overlay';
+            return null;
+        }
+
+        function measureEditorCharWidth(textarea) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const style = getComputedStyle(textarea);
+            ctx.font = style.fontSize + ' ' + style.fontFamily;
+            return ctx.measureText('A').width;
+        }
+
+        function drawErrorZigzag(source, line, col, msg) {
+            clearErrorMarkers();
+            if (!source || line <= 0 || col <= 0) return;
+
+            currentErrorSource = source;
+            currentErrorMsg = msg;
+            const textareaId = getEditorId(source);
+            const overlayId = getOverlayId(source);
+            if (!textareaId || !overlayId) return;
+
+            const textarea = document.getElementById(textareaId);
+            const overlay = document.getElementById(overlayId);
+            if (!textarea || !overlay) return;
+
+            const charWidth = measureEditorCharWidth(textarea);
+            const fontSize = parseFloat(getComputedStyle(textarea).fontSize);
+            const lineHeight = fontSize * 1.5;
+
+            const x = (col - 1) * charWidth;
+            const y = (line - 1) * lineHeight;
+
+            const zigzagWidth = 32;
+            const amplitude = 3;
+            const step = 4;
+            let path = '';
+            let px = x;
+            let py = y;
+            path += 'M ' + px + ' ' + py;
+            let goingUp = true;
+            while (px < x + zigzagWidth) {
+                px += step;
+                py = y + (goingUp ? -amplitude : amplitude);
+                path += ' L ' + px + ' ' + py;
+                goingUp = !goingUp;
+            }
+
+            overlay.innerHTML = '';
+            var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.style.overflow = 'visible';
+            svg.dataset.errorMsg = msg;
+            svg.dataset.line = line;
+            svg.dataset.col = col;
+
+            var pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            pathEl.setAttribute('d', path);
+            pathEl.setAttribute('stroke', '#f38ba8');
+            pathEl.setAttribute('stroke-width', '1.5');
+            pathEl.setAttribute('fill', 'none');
+            pathEl.style.pointerEvents = 'auto';
+            pathEl.style.cursor = 'pointer';
+            pathEl.addEventListener('mouseenter', function(e) {
+                var tooltip = document.getElementById('error-tooltip');
+                var svgRect = svg.getBoundingClientRect();
+                tooltip.textContent = msg;
+                tooltip.style.left = (e.clientX + 10) + 'px';
+                tooltip.style.top = (e.clientY - 10) + 'px';
+                tooltip.classList.add('visible');
+            });
+            pathEl.addEventListener('mousemove', function(e) {
+                var tooltip = document.getElementById('error-tooltip');
+                tooltip.style.left = (e.clientX + 10) + 'px';
+                tooltip.style.top = (e.clientY - 10) + 'px';
+            });
+            pathEl.addEventListener('mouseleave', function() {
+                var tooltip = document.getElementById('error-tooltip');
+                tooltip.classList.remove('visible');
+            });
+            svg.appendChild(pathEl);
+            overlay.appendChild(svg);
+
+            syncErrorScroll(source);
+        }
+
+        function clearErrorMarkers() {
+            currentErrorSource = null;
+            currentErrorMsg = '';
+            ['grammar-error-overlay', 'actions-error-overlay', 'string-error-overlay'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.innerHTML = '';
+            });
+        }
+
+        function syncErrorScroll(source) {
+            var textareaId = getEditorId(source);
+            var overlayId = getOverlayId(source);
+            if (!textareaId || !overlayId) return;
+
+            var textarea = document.getElementById(textareaId);
+            var overlay = document.getElementById(overlayId);
+            if (!textarea || !overlay) return;
+
+            var svg = overlay.querySelector('svg');
+            if (!svg) return;
+            svg.style.transform = 'translate(' + (-textarea.scrollLeft) + 'px, ' + (-textarea.scrollTop) + 'px)';
+        }
+
+        // ============================================================
         // Error Display
         // ============================================================
         function showError(msg) {
-            const bar = document.getElementById('error-bar');
-            bar.textContent = msg;
-            bar.className = 'visible';
+            const body = document.getElementById('error-body');
+            body.textContent = msg;
+            const panel = document.getElementById('error-panel');
+            panel.classList.remove('collapsed');
+            const toggle = document.querySelector('.panel-toggle[data-panel="error"] input');
+            if (toggle) toggle.checked = true;
             clearTrace();
             clearMatch();
             clearMade();
             clearStringColored();
+            updateRightHalf();
         }
 
         function hideError() {
-            document.getElementById('error-bar').className = '';
+            const panel = document.getElementById('error-panel');
+            panel.classList.add('collapsed');
+            const toggle = document.querySelector('.panel-toggle[data-panel="error"] input');
+            if (toggle) toggle.checked = false;
+            updateRightHalf();
         }
 
         // ============================================================
@@ -1402,9 +1581,11 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         function handleResponse(data) {
             if (data.error) {
                 showError(data.error);
+                drawErrorZigzag(data.error_source, data.error_line, data.error_col, data.error);
                 return;
             }
             hideError();
+            clearErrorMarkers();
             if (data.trace) renderTrace(data.trace);
             else clearTrace();
             if (data.match) renderMatch(data.match);
@@ -1608,6 +1789,9 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             var madef = getFlex(made);
             if (madef != null) sizes.made = madef;
 
+            var errorPanel = document.getElementById('error-panel');
+            if (errorPanel) sizes.error = errorPanel.classList.contains('collapsed') ? 0 : 1;
+
             return { panelVisibility: vis, panelSizes: sizes };
         }
 
@@ -1727,6 +1911,11 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
                     var made = document.getElementById('made-panel');
                     if (made) made.style.flex = s.made.toFixed(4);
                 }
+
+                if (s.error != null && errorPanel) {
+                    if (s.error === 0) errorPanel.classList.add('collapsed');
+                    else errorPanel.classList.remove('collapsed');
+                }
             }
 
             updateRightHalf();
@@ -1770,18 +1959,21 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             const pre = document.getElementById('grammar-highlight');
             pre.scrollTop = grammarInput.scrollTop;
             pre.scrollLeft = grammarInput.scrollLeft;
+            if (currentErrorSource === 'grammar') syncErrorScroll('grammar');
         });
 
         actionsInput.addEventListener('scroll', () => {
             const pre = document.getElementById('actions-highlight');
             pre.scrollTop = actionsInput.scrollTop;
             pre.scrollLeft = actionsInput.scrollLeft;
+            if (currentErrorSource === 'actions') syncErrorScroll('actions');
         });
 
         stringInput.addEventListener('scroll', () => {
             const pre = document.getElementById('string-colored');
             pre.scrollTop = stringInput.scrollTop;
             pre.scrollLeft = stringInput.scrollLeft;
+            if (currentErrorSource === 'string') syncErrorScroll('string');
         });
 
         // Tab handling
@@ -1814,6 +2006,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             var trace = document.getElementById('trace-panel');
             var match = document.getElementById('match-panel');
             var made = document.getElementById('made-panel');
+            var errorPanel = document.getElementById('error-panel');
             var rightHalf = document.getElementById('right-half');
             var rightTopRow = document.getElementById('right-top-row');
             var leftHalf = document.getElementById('left-half');
@@ -1822,6 +2015,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
             if (!trace.classList.contains('collapsed')) anyVisible++;
             if (!match.classList.contains('collapsed')) anyVisible++;
             if (!made.classList.contains('collapsed')) anyVisible++;
+            if (errorPanel && !errorPanel.classList.contains('collapsed')) anyVisible++;
 
             if (anyVisible === 0) {
                 rightHalf.classList.add('hidden');
@@ -1913,7 +2107,7 @@ token consonant { <[bcdfghjklmnpqrstvwxyz]> }`;
         function resetPanelSizes() {
             ['left-half', 'right-half', 'right-top-row',
              'grammar-panel', 'actions-panel', 'string-panel',
-             'trace-panel', 'match-panel', 'made-panel'].forEach(function (id) {
+             'trace-panel', 'match-panel', 'made-panel', 'error-panel'].forEach(function (id) {
                 var el = document.getElementById(id);
                 if (el) el.style.flex = '';
             });

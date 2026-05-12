@@ -2,7 +2,7 @@ use Test;
 use lib 'lib';
 use GrammarEngine;
 
-plan 11;
+plan 12;
 
 subtest 'Actions class: .made value returned as .raku string' => {
     my $grammar = q:to/END/;
@@ -62,7 +62,11 @@ subtest 'Actions class: no actions behaves same as before' => {
 }
 
 subtest 'Valid grammar compiles and parses' => {
-    my %result = process-grammar('token TOP { <digit>+ }', '123');
+    my $g = q:to/END/;
+        unit grammar VG1;
+        token TOP { <digit>+ }
+        END
+    my %result = process-grammar($g, '123');
     ok %result<trace>:exists, 'trace field present';
     ok %result<match>:exists, 'match field present';
     ok %result<trace><rule>:exists, 'trace has rule name';
@@ -76,14 +80,61 @@ subtest 'Compilation error returns error' => {
     ok %result<error>, 'error message is non-empty';
 }
 
+subtest 'Structured error response: fields present' => {
+    my %err-grammar = process-grammar('token TOP { <unclosed', '');
+    ok %err-grammar<error>:exists, 'error field present on grammar error';
+    ok %err-grammar<error_line>:exists, 'error_line field present on grammar error';
+    ok %err-grammar<error_col>:exists, 'error_col field present on grammar error';
+    ok %err-grammar<error_source>:exists, 'error_source field present on grammar error';
+    is %err-grammar<error_source>, 'grammar', 'error_source is "grammar" for grammar errors';
+    isa-ok %err-grammar<error_line>, Int, 'error_line is an integer';
+    isa-ok %err-grammar<error_col>, Int, 'error_col is an integer';
+
+    my $g = q:to/END/;
+        unit grammar EG2;
+        token TOP { <digit>+ }
+        END
+    my %err-actions = process-grammar($g, '42', 'class Bad { method TOP($/) { $¢ø } }');
+    ok %err-actions<error>:exists, 'error field present on actions error';
+    ok %err-actions<error_source>:exists, 'error_source present on actions error';
+    is %err-actions<error_source>, 'actions', 'error_source is "actions" for actions errors';
+
+    my $g3 = q:to/END/;
+        unit grammar EG3;
+        token TOP { <TOP> }
+        END
+    my %err-runtime = process-grammar($g3, 'x');
+    ok %err-runtime<error>:exists, 'error field present on runtime error';
+    ok %err-runtime<error_source>:exists, 'error_source present on runtime error';
+    is %err-runtime<error_source>, 'runtime', 'error_source is "runtime" for runtime errors';
+
+    my $g4 = q:to/END/;
+        unit grammar EG4;
+        token TOP { <digit>+ }
+        END
+    my %success = process-grammar($g4, '42');
+    nok %success<error>:exists, 'no error field on success';
+    nok %success<error_line>:exists, 'no error_line on success';
+    nok %success<error_source>:exists, 'no error_source on success';
+}
+
 subtest 'Infinite loop protection' => {
-    my %result = process-grammar('token TOP { <TOP> }', 'x');
+    my $g = q:to/END/;
+        unit grammar IL1;
+        token TOP { <TOP> }
+        END
+    my %result = process-grammar($g, 'x');
     ok %result<error>:exists, 'error field present';
     like %result<error>, /:i infinite/, 'error mentions infinite loop';
+    is %result<error_source>, 'runtime', 'infinite loop is runtime error';
 }
 
 subtest 'Trace nodes have position data' => {
-    my %result = process-grammar('token TOP { <digit>+ }', '42');
+    my $g = q:to/END/;
+        unit grammar TN1;
+        token TOP { <digit>+ }
+        END
+    my %result = process-grammar($g, '42');
     ok %result<trace>:exists, 'trace present';
     sub check-pos(%node) {
         ok %node<pos_start>:exists, "trace node '%node<rule>' has pos_start";
@@ -100,7 +151,11 @@ subtest 'Trace nodes have position data' => {
 }
 
 subtest 'Match serialization is correct' => {
-    my %result = process-grammar('token TOP { <digit>+ }', '123');
+    my $g = q:to/END/;
+        unit grammar MS1;
+        token TOP { <digit>+ }
+        END
+    my %result = process-grammar($g, '123');
     ok %result<match>:exists, 'match present';
     is %result<match><rule>, 'TOP', 'match root rule is TOP';
     is %result<match><data>, '123', 'match root data is full input';
@@ -116,7 +171,11 @@ subtest 'Empty grammar handled gracefully' => {
 }
 
 subtest 'serialize-match produces correct nested structure' => {
-    my %result = process-grammar('token TOP { <digit> <digit> }', '42');
+    my $g = q:to/END/;
+        unit grammar SM1;
+        token TOP { <digit> <digit> }
+        END
+    my %result = process-grammar($g, '42');
     ok %result<match>:exists, 'match present';
     is %result<match><rule>, 'TOP', 'root rule is TOP';
     is %result<match><data>, '42', 'root data is full string';

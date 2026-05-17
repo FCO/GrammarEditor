@@ -17,6 +17,10 @@ Web-based grammar editor with a JS frontend and a Raku backend.
   ```bash
   zef install Cro::HTTP Cro::WebSocket JSON::Fast
   ```
+- [Grammar::Extractor](https://raku.land/zef:FCO/Grammar::Extractor) — Grammar trace tree extraction
+  ```bash
+  zef install Grammar::Extractor
+  ```
 
 ### Run
 

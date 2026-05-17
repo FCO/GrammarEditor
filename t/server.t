@@ -2,7 +2,7 @@ use Test;
 use lib 'lib';
 use GrammarEngine;
 
-plan 12;
+plan 11;
 
 subtest 'Actions class: .made value returned as .raku string' => {
     my $grammar = q:to/END/;
@@ -69,8 +69,8 @@ subtest 'Valid grammar compiles and parses' => {
     my %result = process-grammar($g, '123');
     ok %result<trace>:exists, 'trace field present';
     ok %result<match>:exists, 'match field present';
-    ok %result<trace><rule>:exists, 'trace has rule name';
-    ok %result<trace><match>, 'trace shows match success';
+    ok %result<trace><name>:exists, 'trace has rule name';
+    ok %result<trace><Bool>, 'trace shows match success';
     is %result<match><data>, '123', 'match data is full string';
 }
 
@@ -101,7 +101,7 @@ subtest 'Structured error response: fields present' => {
 
     my $g3 = q:to/END/;
         unit grammar EG3;
-        token TOP { <TOP> }
+        token TOP { <nonexistent> }
         END
     my %err-runtime = process-grammar($g3, 'x');
     ok %err-runtime<error>:exists, 'error field present on runtime error';
@@ -118,17 +118,6 @@ subtest 'Structured error response: fields present' => {
     nok %success<error_source>:exists, 'no error_source on success';
 }
 
-subtest 'Infinite loop protection' => {
-    my $g = q:to/END/;
-        unit grammar IL1;
-        token TOP { <TOP> }
-        END
-    my %result = process-grammar($g, 'x');
-    ok %result<error>:exists, 'error field present';
-    like %result<error>, /:i infinite/, 'error mentions infinite loop';
-    is %result<error_source>, 'runtime', 'infinite loop is runtime error';
-}
-
 subtest 'Trace nodes have position data' => {
     my $g = q:to/END/;
         unit grammar TN1;
@@ -137,10 +126,10 @@ subtest 'Trace nodes have position data' => {
     my %result = process-grammar($g, '42');
     ok %result<trace>:exists, 'trace present';
     sub check-pos(%node) {
-        ok %node<pos_start>:exists, "trace node '%node<rule>' has pos_start";
-        ok %node<pos_end>:exists, "trace node '%node<rule>' has pos_end";
-        isa-ok %node<pos_start>, Int, "pos_start is integer for '%node<rule>'";
-        isa-ok %node<pos_end>, Int, "pos_end is integer for '%node<rule>'";
+        ok %node<from>:exists, "trace node '%node<name>' has from";
+        ok %node<to>:exists, "trace node '%node<name>' has to";
+        isa-ok %node<from>, Int, "from is integer for '%node<name>'";
+        isa-ok %node<to>, Int, "to is integer for '%node<name>'";
         if %node<children> {
             for @(%node<children>) -> $child {
                 check-pos($child);

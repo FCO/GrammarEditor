@@ -24,32 +24,32 @@ const DEFAULT_STRING = `hello`;
 
 const TRACE_RESPONSE = {
   trace: {
-    rule: "TOP", match: true, pos_start: 0, pos_end: 5,
+    name: "TOP", Bool: true, from: 0, to: 5,
     children: [
-      { rule: "letter", match: true, pos_start: 0, pos_end: 1,
+      { name: "letter", Bool: true, from: 0, to: 1,
         children: [
-          { rule: "consonant", match: true, pos_start: 0, pos_end: 1 }
+          { name: "consonant", Bool: true, from: 0, to: 1 }
         ]
       },
-      { rule: "letter", match: true, pos_start: 1, pos_end: 2,
+      { name: "letter", Bool: true, from: 1, to: 2,
         children: [
-          { rule: "vowel", match: true, pos_start: 1, pos_end: 2 }
+          { name: "vowel", Bool: true, from: 1, to: 2 }
         ]
       },
-      { rule: "letter", match: true, pos_start: 2, pos_end: 3,
+      { name: "letter", Bool: true, from: 2, to: 3,
         children: [
-          { rule: "consonant", match: true, pos_start: 2, pos_end: 3 }
+          { name: "consonant", Bool: true, from: 2, to: 3 }
         ]
       },
-      { rule: "letter", match: true, pos_start: 3, pos_end: 4,
+      { name: "letter", Bool: true, from: 3, to: 4,
         children: [
-          { rule: "consonant", match: true, pos_start: 3, pos_end: 4 },
-          { rule: "consonant", match: true, pos_start: 3, pos_end: 4 }
+          { name: "consonant", Bool: true, from: 3, to: 4 },
+          { name: "consonant", Bool: true, from: 3, to: 4 }
         ]
       },
-      { rule: "letter", match: true, pos_start: 4, pos_end: 5,
+      { name: "letter", Bool: true, from: 4, to: 5,
         children: [
-          { rule: "vowel", match: true, pos_start: 4, pos_end: 5 }
+          { name: "vowel", Bool: true, from: 4, to: 5 }
         ]
       },
     ]
@@ -69,11 +69,11 @@ const TRACE_RESPONSE = {
 
 const PARTIAL_MATCH_RESPONSE = {
   trace: {
-    rule: "TOP", match: false, pos_start: 0, pos_end: 6,
+    name: "TOP", Bool: false, from: 0, to: 6,
     children: [
-      { rule: "digit", match: true, pos_start: 0, pos_end: 1, children: [] },
-      { rule: "digit", match: true, pos_start: 1, pos_end: 2, children: [] },
-      { rule: "digit", match: true, pos_start: 2, pos_end: 3, children: [] },
+      { name: "digit", Bool: true, from: 0, to: 1, children: [] },
+      { name: "digit", Bool: true, from: 1, to: 2, children: [] },
+      { name: "digit", Bool: true, from: 2, to: 3, children: [] },
     ]
   },
   match: null
@@ -112,9 +112,9 @@ function grammarResponse(grammar, string, actions) {
   if (grammar.includes('<unknown>')) {
     return {
       trace: {
-        rule: "TOP", match: false, pos_start: 0, pos_end: 5,
+        name: "TOP", Bool: false, from: 0, to: 5,
         children: [
-          { rule: "unknown", match: false, pos_start: 0, pos_end: 0, children: [] }
+          { name: "unknown", Bool: false, from: 0, to: 0, children: [] }
         ]
       },
       match: null
@@ -124,9 +124,9 @@ function grammarResponse(grammar, string, actions) {
     const len = string.length;
     return {
       trace: {
-        rule: "TOP", match: false, pos_start: 0, pos_end: len,
+        name: "TOP", Bool: false, from: 0, to: len,
         children: [
-          { rule: "fail", match: false, pos_start: 0, pos_end: 0, children: [] }
+          { name: "fail", Bool: false, from: 0, to: 0, children: [] }
         ]
       },
       match: null

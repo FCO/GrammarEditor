@@ -1,9 +1,7 @@
+use Grammar::Extractor;
 use JSON::Fast;
 
 unit module GrammarEngine;
-
-my %grammar-cache;
-my %action-cache;
 
 sub extract-error($ex, Str $source) returns Hash {
     my $msg = $ex.Str;
@@ -27,93 +25,63 @@ sub extract-error($ex, Str $source) returns Hash {
     return %( error => $msg, error_line => $line, error_col => $col, error_source => $source );
 }
 
+sub serialize-step($step) returns Hash {
+    my %node = 
+        name           => $step.name,
+        Bool           => $step.Bool,
+        str-or-missing => $step.so ?? $step.Str !! $step.orig.substr($step.from, 1),
+        from           => $step.from,
+        to             => $step.so ?? $step.result.to !! $step.from,
+    ;
+    if $step.children {
+        %node<children> = $step.children.map(&serialize-step).Array;
+    }
+    %node
+}
+
 sub process-grammar(Str $code, Str $string, Str $actions?) returns Hash is export {
-    my $gkey = $code.subst(/\n\s+/, "\n", :g).subst(/<[\s] - [\n]>+/, " ", :g);
-    my $akey = $actions.subst(/\n\s+/, "\n", :g).subst(/<[\s] - [\n]>+/, " ", :g);
-
-    {
-        unless %grammar-cache{$gkey}:exists {
-            my $g;
-            try {
-                $g = $code.EVAL;
-                CATCH {
-                    default {
-                        .note;
-                        return extract-error($_, 'grammar');
-                    }
-                }
+    my $extractor;
+    try {
+        $extractor = Grammar::Extractor.new(:$code);
+        CATCH {
+            default {
+                return extract-error($_, 'grammar');
             }
-
-            for $g.^methods.grep: { .WHAT ~~ Regex } -> &rule {
-                &rule.wrap: my method {
-                    die "Infinite loop" if ++$*PARSE-COUNT > 1_000;
-                    my @parent := @*CHILDREN;
-                    {
-                        my %node;
-                        my @*CHILDREN   := %node<children> = [];
-                        my \resp         = callsame;
-                        %node<rule>      = &rule.name;
-                        %node<match>     = ?resp;
-                        %node<pos_start> = resp.from;
-                        if resp {
-                            %node<data>    = resp.Str;
-                            %node<pos_end> = resp.to;
-                        } else {
-                            %node<data>    = resp.orig.substr: resp.from, 1;
-                            %node<pos_end> = resp.from;
-                        }
-                        @parent.push: %node;
-                        return resp
-                    }
-                }
-            }
-            %grammar-cache{$gkey} = $g;
         }
+    }
 
-        my $grammar = %grammar-cache{$gkey};
-
-        my $actions-obj;
-        if $actions.defined && $actions.trim {
-            unless %action-cache{$akey}:exists {
-                my $a;
-                try {
-                    $a = $actions.EVAL.new;
-                    CATCH {
-                        default {
-                            return extract-error($_, 'actions');
-                        }
-                    }
-                }
-                %action-cache{$akey} = $a;
-            }
-            $actions-obj = %action-cache{$akey};
-        }
-
-        my %result;
+    my $actions-obj;
+    if $actions.defined && $actions.trim {
         try {
-            with $string {
-                my @*CHILDREN := my @children;
-                my $*PARSE-COUNT = 0;
-                my $match = $grammar.parse: $string, |(:actions($_) with $actions-obj);
-                with @children.head -> %tree {
-                    %tree<match>   = False unless $match;
-                    %result<trace> = %tree;
-                }
-                if $match {
-                    %result<match> = serialize-match $match;
-                    my $made       = $match.made;
-                    %result<made>  = $made.raku if $made.defined;
-                }
-            }
+            $actions-obj = $actions.EVAL.new;
             CATCH {
                 default {
-                    return extract-error $_, 'runtime';
+                    return extract-error($_, 'actions');
                 }
             }
         }
-
-        return %result;
     }
+
+    my %result;
+    try {
+        my $match = $extractor.parse($string, |(:actions($_) with $actions-obj));
+        with $extractor.step -> $step {
+            %result<trace> = serialize-step($step);
+            %result<trace><Bool> = False unless $match;
+        }
+        if $match {
+            %result<match> = serialize-match($match);
+            my $made = $match.made;
+            %result<made> = $made.raku if $made.defined;
+        }
+        CATCH {
+            default {
+                return extract-error($_, 'runtime');
+            }
+        }
+    }
+
+    return %result;
 }
 
 sub serialize-match(Match $m, Str :$rule-name = 'TOP') is export {

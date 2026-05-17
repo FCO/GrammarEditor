@@ -115,7 +115,7 @@ describe('renderTrace', () => {
   beforeEach(() => setupDOM());
 
   test('renders match badge for matched nodes', () => {
-    const tree = { rule: 'TOP', match: true, children: [] };
+    const tree = { name: 'TOP', Bool: true, children: [] };
     renderTrace(tree);
     const badges = document.querySelectorAll('.tree-badge.match');
     expect(badges.length).toBeGreaterThan(0);
@@ -123,7 +123,7 @@ describe('renderTrace', () => {
   });
 
   test('renders fail badge for failed nodes', () => {
-    const tree = { rule: 'TOP', match: false, children: [] };
+    const tree = { name: 'TOP', Bool: false, children: [] };
     renderTrace(tree);
     const badges = document.querySelectorAll('.tree-badge.fail');
     expect(badges.length).toBeGreaterThan(0);
@@ -131,7 +131,7 @@ describe('renderTrace', () => {
   });
 
   test('renders rule name and data', () => {
-    const tree = { rule: 'TOP', match: true, data: 'hello', children: [] };
+    const tree = { name: 'TOP', Bool: true, 'str-or-missing': 'hello', children: [] };
     renderTrace(tree);
     const nameEl = document.querySelector('.tree-rule-name');
     expect(nameEl.textContent).toBe('TOP');
@@ -141,9 +141,9 @@ describe('renderTrace', () => {
 
   test('renders nested children', () => {
     const tree = {
-      rule: 'TOP', match: true,
+      name: 'TOP', Bool: true,
       children: [
-        { rule: 'digit', match: true, data: '1', children: [] }
+        { name: 'digit', Bool: true, 'str-or-missing': '1', children: [] }
       ]
     };
     renderTrace(tree);
@@ -173,7 +173,7 @@ describe('highlightTraceNode / clearTraceHighlights', () => {
   beforeEach(() => setupDOM());
 
   test('highlightTraceNode highlights the correct trace node', () => {
-    const tree = { rule: 'TOP', match: true, children: [] };
+    const tree = { name: 'TOP', Bool: true, children: [] };
     renderTrace(tree);
     const node = document.querySelector('.tree-node');
     highlightTraceNodeByPath('/TOP', '#ff0000');
@@ -181,7 +181,7 @@ describe('highlightTraceNode / clearTraceHighlights', () => {
   });
 
   test('clearTraceHighlights removes trace highlights', () => {
-    const tree = { rule: 'TOP', match: true, children: [] };
+    const tree = { name: 'TOP', Bool: true, children: [] };
     renderTrace(tree);
     highlightTraceNodeByPath('/TOP', '#ff0000');
     const node = document.querySelector('.tree-node');
@@ -358,13 +358,13 @@ describe('renderStringColored / clearStringColored', () => {
   test('renders colored spans from trace tree', () => {
     document.getElementById('string-input').value = 'hello';
     const trace = {
-      rule: 'TOP', pos_start: 0, pos_end: 5, match: true,
+      name: 'TOP', from: 0, to: 5, Bool: true,
       children: [
-        { rule: 'letter', pos_start: 0, pos_end: 1, match: true, children: [
-          { rule: 'consonant', pos_start: 0, pos_end: 1, match: true }
+        { name: 'letter', from: 0, to: 1, Bool: true, children: [
+          { name: 'consonant', from: 0, to: 1, Bool: true }
         ]},
-        { rule: 'letter', pos_start: 1, pos_end: 2, match: true, children: [
-          { rule: 'vowel', pos_start: 1, pos_end: 2, match: true }
+        { name: 'letter', from: 1, to: 2, Bool: true, children: [
+          { name: 'vowel', from: 1, to: 2, Bool: true }
         ]},
       ]
     };
@@ -378,7 +378,7 @@ describe('renderStringColored / clearStringColored', () => {
 
   test('clears output on clearStringColored', () => {
     document.getElementById('string-input').value = 'test';
-    const trace = { rule: 'TOP', pos_start: 0, pos_end: 4, match: true };
+    const trace = { name: 'TOP', from: 0, to: 4, Bool: true };
     renderStringColored(trace);
     clearStringColored();
     const output = document.getElementById('string-colored-output');
@@ -414,11 +414,11 @@ describe('renderStringColored unmatched highlighting', () => {
   test('unmatched tail gets .unmatched-char span', () => {
     document.getElementById('string-input').value = '123abc';
     const trace = {
-      rule: 'TOP', pos_start: 0, pos_end: 6, match: false,
+      name: 'TOP', from: 0, to: 6, Bool: false,
       children: [
-        { rule: 'digit', pos_start: 0, pos_end: 1, match: true },
-        { rule: 'digit', pos_start: 1, pos_end: 2, match: true },
-        { rule: 'digit', pos_start: 2, pos_end: 3, match: true },
+        { name: 'digit', from: 0, to: 1, Bool: true },
+        { name: 'digit', from: 1, to: 2, Bool: true },
+        { name: 'digit', from: 2, to: 3, Bool: true },
       ]
     };
     renderStringColored(trace);
@@ -431,9 +431,9 @@ describe('renderStringColored unmatched highlighting', () => {
   test('full match shows no unmatched-char', () => {
     document.getElementById('string-input').value = 'hello';
     const trace = {
-      rule: 'TOP', pos_start: 0, pos_end: 5, match: true,
+      name: 'TOP', from: 0, to: 5, Bool: true,
       children: [
-        { rule: 'letter', pos_start: 0, pos_end: 5, match: true }
+        { name: 'letter', from: 0, to: 5, Bool: true }
       ]
     };
     renderStringColored(trace);
@@ -446,7 +446,7 @@ describe('renderStringColored unmatched highlighting', () => {
   test('no matched nodes renders all as unmatched-char', () => {
     document.getElementById('string-input').value = 'abc';
     const trace = {
-      rule: 'TOP', pos_start: 0, pos_end: 3, match: false
+      name: 'TOP', from: 0, to: 3, Bool: false
     };
     renderStringColored(trace);
     const output = document.getElementById('string-colored-output');
@@ -456,7 +456,7 @@ describe('renderStringColored unmatched highlighting', () => {
 
   test('empty input renders empty', () => {
     document.getElementById('string-input').value = '';
-    const trace = { rule: 'TOP', pos_start: 0, pos_end: 0, match: false };
+    const trace = { name: 'TOP', from: 0, to: 0, Bool: false };
     renderStringColored(trace);
     const output = document.getElementById('string-colored-output');
     expect(output.innerHTML).toBe('');
@@ -569,15 +569,15 @@ describe('PALETTE_REGISTRY / getActivePalette / setActivePalette', () => {
 
   test('renderStringColored uses new palette after switch', () => {
     document.getElementById('string-input').value = 'a';
-    renderStringColored({ rule: 'TOP', pos_start: 0, pos_end: 1, match: true, children: [
-      { rule: 'vowel', pos_start: 0, pos_end: 1, match: true }
+    renderStringColored({ name: 'TOP', from: 0, to: 1, Bool: true, children: [
+      { name: 'vowel', from: 0, to: 1, Bool: true }
     ]});
     const output1 = document.getElementById('string-colored-output');
     const color1 = output1.innerHTML.match(/color:([^;]+)/)[1];
 
     setActivePalette('Monokai');
-    renderStringColored({ rule: 'TOP', pos_start: 0, pos_end: 1, match: true, children: [
-      { rule: 'vowel', pos_start: 0, pos_end: 1, match: true }
+    renderStringColored({ name: 'TOP', from: 0, to: 1, Bool: true, children: [
+      { name: 'vowel', from: 0, to: 1, Bool: true }
     ]});
     const output2 = document.getElementById('string-colored-output');
     const color2 = output2.innerHTML.match(/color:([^;]+)/)[1];

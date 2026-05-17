@@ -42,14 +42,14 @@ export function renderTrace(tree) {
 }
 
 export function renderTraceNode(node, depth, path) {
-    const id = path + '/' + (node.rule || '?');
+    const id = path + '/' + (node.name || '?');
     const color = getNodeColor(id);
     const hasChildren = node.children && node.children.length > 0;
 
     const container = document.createElement('div');
     container.className = 'tree-node';
     container.dataset.path = id;
-    storeTraceNode(id, container, node.rule || '?', node.pos_start, node.pos_end);
+    storeTraceNode(id, container, node.name || '?', node.from, node.to);
 
     const header = document.createElement('div');
     header.className = 'tree-node-header';
@@ -65,36 +65,36 @@ export function renderTraceNode(node, depth, path) {
     header.appendChild(dot);
 
     const badge = document.createElement('span');
-    badge.className = 'tree-badge ' + (node.match ? 'match' : 'fail');
-    badge.textContent = node.match ? 'MATCH' : 'FAIL';
+    badge.className = 'tree-badge ' + (node.Bool ? 'match' : 'fail');
+    badge.textContent = node.Bool ? 'MATCH' : 'FAIL';
     header.appendChild(badge);
 
     const name = document.createElement('span');
     name.className = 'tree-rule-name';
-    name.textContent = node.rule || '(anonymous)';
+    name.textContent = node.name || '(anonymous)';
     header.appendChild(name);
 
-    if (node.data != null) {
+    if (node['str-or-missing'] != null) {
         const data = document.createElement('span');
         data.className = 'tree-data';
-        data.textContent = JSON.stringify(node.data);
+        data.textContent = JSON.stringify(node['str-or-missing']);
         header.appendChild(data);
     }
 
-    if (node.pos_start != null) {
+    if (node.from != null) {
         const pos = document.createElement('span');
         pos.className = 'tree-pos';
-        pos.textContent = node.pos_start + (node.pos_end !== node.pos_start ? '-' + node.pos_end : '');
+        pos.textContent = node.from + (node.to !== node.from ? '-' + node.to : '');
         header.appendChild(pos);
     }
 
     container.appendChild(header);
 
     container.addEventListener('mouseenter', () => {
-        highlightStringRegion(node.pos_start, node.pos_end, color);
+        highlightStringRegion(node.from, node.to, color);
         highlightEl(container, color);
-        const rule = node.rule || '?';
-        const posKey = rule + ':' + node.pos_start + '-' + node.pos_end;
+        const rule = node.name || '?';
+        const posKey = rule + ':' + node.from + '-' + node.to;
         highlightEl(matchPosMap.get(posKey), color);
     });
     container.addEventListener('mouseleave', () => {
@@ -329,18 +329,18 @@ export function renderStringColored(match) {
     const allNodes = [];
     function collect(node, depth) {
         if (node == null) return;
-        if (node.pos_start != null && node.pos_end != null) {
+        if (node.from != null && node.to != null) {
             allNodes.push({
-                start: node.pos_start,
-                end: node.pos_end,
-                rule: node.rule || 'TOP',
+                start: node.from,
+                end: node.to,
+                rule: node.name || 'TOP',
                 depth: depth
             });
-            if (node.match) {
+            if (node.Bool) {
                 matched.push({
-                    start: node.pos_start,
-                    end: node.pos_end,
-                    rule: node.rule || 'TOP',
+                    start: node.from,
+                    end: node.to,
+                    rule: node.name || 'TOP',
                     depth: depth,
                     isLeaf: !node.children || node.children.length === 0
                 });
